@@ -1,3 +1,5 @@
-# Headline
+# 欢迎使用实验室在线文档
 
-> An awesome project.
+> 马上开始吧！
+
+- [深度学习服务器指南](/env/server_guide.md)
