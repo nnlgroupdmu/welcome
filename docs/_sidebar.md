@@ -1,3 +1,2 @@
-* [欢迎使用实验室在线文档](/README.md)
-* 服务器指南
-  * [深度学习服务器指南](/env/server_guide.md)
+* [欢迎使用实验室在线文档](README.md)
+* [深度学习服务器指南](env/server_guide.md)
