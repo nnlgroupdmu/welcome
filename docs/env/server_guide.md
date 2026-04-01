@@ -41,7 +41,7 @@
 ## 1  准备工作
 
 本服务器采用 **SSH + VS Code** 远程开发模式。
-**个人电脑端**：安装 **VS Code** 或其他代码编辑软件（如 Cursor），并安装插件 **"Remote Development"**（不同软件可能有不同插件名）。
+**个人电脑端**：安装 **VS Code** 或其他代码编辑软件（如 Cursor），并安装插件 **Remote Development**（不同软件可能有不同插件名）。
 
 ### 1.1 实验室外的连接准备
 
@@ -107,6 +107,7 @@ username@192.168.31.240
 
 
 使用自己账号登录的情况下，工作目录为 /home/*your_name*
+
 **验证权限：** 连接成功后，在 VS Code 终端输入 `docker ps`。（如果无权限，则是注册时缺少了 `sudo usermod -aG docker username
 `）
 
@@ -238,7 +239,7 @@ apt-get install tmux
 
 > [!info] 为什么不 tmux-container-tmux 三层嵌套？
 > 理想的嵌套结构是：
-> **SSH (连接)** $\rightarrow$ **Tmux (宿主机层，保活)** $\rightarrow$ **Docker (容器层，隔离环境)** $\rightarrow$ **Tmux (容器内层，多任务并行)**
+> **SSH (连接)** -> **Tmux (宿主机层，保活)** -> **Docker (容器层，隔离环境)** -> **Tmux (容器内层，多任务并行)**
 > 
 > 然而，这会导致：「按下 `Ctrl+B` 时，到底是外层的 tmux 响应，还是内层的响应？」
 > 
@@ -327,9 +328,9 @@ CUDA_VISIBLE_DEVICES=1 python train.py
 |**命令**|**功能**|
 |---|---|
 |`tmux new -s <name>`|**新建会话**。建议用项目名命名（如 `tmux new -s train`）。|
-|`Ctrl + b` 然后按 `d`|**脱离 (Detach)**。任务继续跑，你安全退出当前窗口。|
+|`Ctrl + b` 然后按 `d`|**脱离**(Detach)。任务继续跑，你安全退出当前窗口。|
 |`tmux ls`|**查看后台列表**。看看你有哪些“桌子”还在开着。|
-|`tmux a -t <name>`|**接入 (Attach)**。重新回到之前的会话窗口。|
+|`tmux a -t <name>`|**接入**(Attach)。重新回到之前的会话窗口。|
 |`exit`|**彻底关闭**。在会话窗口内输入，会销毁该会话。|
 
 
