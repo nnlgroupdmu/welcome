@@ -13,7 +13,7 @@ ssh username@192.168.31.240
 
 🛠️ 环境配置
 
-我们统一使用 Docker 管理环境。请勿直接在系统 Python 下安装包。
+每人独立系统账号，使用 Docker container 代替 conda envs 管理项目环境，请勿直接在系统 Python 下安装包。
 
 ---
 
@@ -28,4 +28,12 @@ ssh username@192.168.31.240
 个人目录: /home/username (建议放代码和模型)
 
 归档 / 拷贝中转（用户只读）: /disk2
+
+移动存储设备: /media/yangfan5090/*your_usb_stick_name* （提前在自己电脑上改名，不要有空格、中文）
+
+U盘拷入数据示例：(格式：cp -rp [源路径] [目标路径])
+
+```bash
+cp -rp /media/yangfan5090/your_usb_stick_name/data_folder  /home/your_username/work_dir/
+```
 

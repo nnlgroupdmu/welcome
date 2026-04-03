@@ -129,22 +129,64 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 
 ## 2  基于 Docker 的工作流
 
+#### 结构概览：Docker 是如何工作的？
+
+在服务器上，Docker 就像是一个集装箱运输船。
+
+1. 宿主机 (Host)： 载体（服务器硬件 + 驱动）。
+
+2. 镜像 (Image)： “环境的快照”。它是一个只读模板，包含了操作系统、CUDA、Python 及所有插件。
+
+3. 容器 (Container)： “运行中的镜像”。你所有的代码运行、模型训练都在容器这个“独立房间”里进行。
+
+
+#### Docker vs. Conda：相似与不同
+
+很多同学习惯用 Conda，其实 Docker 可以看作是“加强版”的 Conda。
+
+
+| **特性**      | **Conda 虚拟环境**               | **Docker 容器**                          |
+| ----------- | ---------------------------- | -------------------------------------- |
+| **隔离程度**    | **半隔离**。仅隔离 Python 包。        | **全隔离**。隔离了操作系统、系统库和 GPU 驱动接口。         |
+| **一致性**     | 换台机器可能因为系统库不同而报错。            | 镜像在哪运行都一模一样（Build once, run anywhere）。 |
+| **CUDA 管理** | 经常遇到 Conda CUDA 与系统 CUDA 冲突。 | 镜像内置匹配好的 CUDA，开发者无需配置宿主机 CUDA。         |
+| **清理难度**    | 卸载不干净容易残留垃圾文件。               | 删除容器/镜像即可彻底关掉并释放资源。                    |
+
+#### Docker 核心工作流：四步走
+
+作为新用户，你只需要掌握这四个核心步骤即可开始实验：
+
+- 第一步：挑选镜像
+根据项目需求（如 PyTorch 版本），从实验室仓库挑选镜像。（包含 Pytorch 镜像和更基础的 ubuntu 镜像等。如有特殊需求，联系管理员拉取新镜像）
+
+- 第二步：创建容器 (Run)
+使用 docker run 命令创建容器，会自动启动（start）容器。关键点是要把服务器上的代码目录“映射”到容器里，这样你在容器里改代码，服务器的文件也会同步变。容器只需创建一次，除非删除，会一直保持你的项目环境。
+
+- 第三步：进入容器开发 (Exec)
+通过 VS Code 的远程插件或命令行，使用 docker exec 进入容器内部，像在普通 Linux 终端一样执行 python train.py。若容器未启动（stop），须先启动（start）
+
+- 第四步：保存/停止 (Stop)
+实验结束或需要修改配置时，可以停止容器（不是删除！）。如果环境配置非常辛苦，还可以把容器“导出”成新镜像。
+
+
 
 > [!WARNING]
 > 由于 5090 全新的 Blackwell 架构，必须使用 **Pytorch >= 2.7.1**提供 GPU 计算支持，而高的 Pytorch 版本只支持高的 Python 版本。
 > 
-> 因此，旧版本 Pytorch 是不可用的，所以我们只提供**基础镜像**： [pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel](https://hub.docker.com/layers/pytorch/pytorch/2.7.1-cuda12.8-cudnn9-devel/images/sha256-3d614dfd422b7e43647491cbf07d6acc516c032fc49c594a94afdebd52552fb9)
+> 因此，旧版本 Pytorch 是不可用的，所以我们提供推荐的**基础镜像**（已在5090服务器上）： [pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel](https://hub.docker.com/layers/pytorch/pytorch/2.7.1-cuda12.8-cudnn9-devel/images/sha256-3d614dfd422b7e43647491cbf07d6acc516c032fc49c594a94afdebd52552fb9)
 > 
-> 配置新项目环境时，我们推荐从这个基础镜像开始，**优先保证 Pytorch 的版本正确**，调整其他包的版本，以及利用 AI 调整项目的旧版本 Pytorch 代码。
+> 配置新项目环境时，我们推荐从这个基础镜像开始，**优先保证 Pytorch 的版本正确**，调整其他包的版本，以及利用 AI 调整项目的旧版本 Pytorch 代码。如果你有需要其他镜像的情况，可先使用 `docker images` 查看服务器本地是否有该镜像，若无，请联系管理员拉取镜像。
 
 因此，如果您的需求是**环境依赖复杂的旧项目**，训练不密集的情况，考虑我们的 3090 或 2080 服务器 可能是更优的。
+
+
 
 **重要参考**：
 基于docker的深度学习配环境秘笈(配环境,看这一篇就够了) https://www.acwing.com/blog/content/62230/ 
 
 ### 2.1 **使用镜像创建容器**
 
-以我们的 Pytorch 基础镜像为例：
+一般的，建议以我们的 Pytorch 基础镜像创建容器，获得可用的 Pytorch：
 
 ```bash
 # 查看所有容器
@@ -179,7 +221,7 @@ exit
 docker rm 容器ID/名称
 ```
 
-如果你有需要其他镜像的情况，可先使用 `docker images` 查看服务器本地是否有该镜像，若无，请联系管理员拉取镜像。
+
 
 ### 2.2 **环境配置**
 
