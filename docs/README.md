@@ -1,8 +1,12 @@
-# 欢迎使用实验室在线文档
+# 欢迎使用506实验室在线文档
 
-服务器仅限实验室 WiFi 局域网环境访问；
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docsify](https://img.shields.io/badge/docsify-4.0-blue.svg)](https://docsify.js.org/)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/nnlgroupdmu/welcome/graphs/commit-activity)
 
-外网环境请联系管理员获取公用账号，并按[深度学习服务器指南](env/server_guide.md)进行配置。
+请按[深度学习服务器指南](env/server_guide.md)进行配置。
+
+服务器仅限实验室 WiFi 局域网环境访问；外网环境请联系管理员获取公用账号。
 
 🚀 登录地址: 
 ```Plaintext

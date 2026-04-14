@@ -137,7 +137,7 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 
 2. 镜像 (Image)： “环境的快照”。它是一个只读模板，包含了操作系统、CUDA、Python 及所有插件。
 
-3. 容器 (Container)： “运行中的镜像”。你所有的代码运行、模型训练都在容器这个“独立房间”里进行。
+3. 容器 (Container)： “环境实例”。相当于conda env。你所有的代码运行、模型训练都在容器这个“独立房间”里进行。
 
 
 #### Docker vs. Conda：相似与不同
@@ -186,6 +186,22 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 
 ### 2.1 **使用镜像创建容器**
 
+创建容器就是新建你的项目运行环境。注意：我们最好先下载代码，创建好需要的工作区目录。
+
+```bash
+# 建议项目放在用户下
+cd /home/yourname
+
+# 下载你项目的代码，会新建一个项目文件夹: /home/YOUR_NAME/PROJECT_NAME
+git clone https://github.com/nnlgroupdmu/XXXXX.git
+
+# 你可能希望重命名这个文件夹
+# 语法：mv [原文件夹名] [新文件夹名]
+mv XXXXX project_name
+```
+
+我们已经有了代码和项目文件夹，下一步就是创建容器，并把项目文件夹路径映射到容器内。
+
 一般的，建议以我们的 Pytorch 基础镜像创建容器，获得可用的 Pytorch：
 
 ```bash
@@ -196,9 +212,16 @@ docker ps -a
 docker run --name="YOUR_CONTAINER" --gpus all -it -v /PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel /bin/bash
 ```
 
-这里面 `/PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT ` 是 `[宿主机路径] 映射: [容器内路径]`，请务必设置，然后把项目的代码和数据集放到服务器端的 `[宿主机路径]`。
+这里面 `/PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT ` 是 `[宿主机路径] 映射: [容器内路径]`，请务必设置，把项目的代码和数据集放到服务器端的 `[宿主机路径]`。为了保持清晰，通常建议宿主机路径与容器内路径保持一致。
 
 之后这个项目就在容器里操作了。
+
+后续进入容器：当你下次想要进入已经创建好的容器时，使用：
+
+```Bash
+docker start my_container  # 先启动
+docker exec -it my_container /bin/bash  # 再进入
+```
 
 常用命令：
 
@@ -258,7 +281,7 @@ pip install -r requirements.txt
 
 ## 3  Tmux 终端复用
 
-对于远程 SSH 开发，**`tmux` 最核心的价值在于：解耦了“会话”与“连接”**。尽管在我们的现代开发流程中，tmux **不再是必选项**（vscode server 保护了 ssh 连接、docker daemon 保护了容器），它依然有重要意义：即便校园网断了、你合上了笔记本电脑、或者 SSH 掉线了，你重新连接后，只要重新连接`tmux`，那么`tmux`终端中**打开的窗口**、**终端的输出信息**都能瞬间“还原”。
+对于远程 SSH 开发，`tmux` 最核心的价值在于：解耦了“会话”与“连接”。尽管在我们的现代开发流程中，tmux 不再是必选项（vscode server 保护了 ssh 连接、docker daemon 保护了容器），它依然有重要意义：即便校园网断了、你合上了笔记本电脑、或者 SSH 掉线了，你重新连接后，只要重新连接`tmux`，那么`tmux`终端中**打开的窗口**、**终端的输出信息**都能瞬间“还原”。
 
 有两种使用 tmux 的思路：
 1. 宿主机 tmux
