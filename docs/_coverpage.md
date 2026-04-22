@@ -4,6 +4,7 @@
 
 > 💪Make 506 great again!
 
+
 <div class="lab-notice-board" style="
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -44,6 +45,7 @@
       <span>我们在考虑准许个人用户使用conda代替docker，欢迎讨论！</span>
   </ul>
 </div>
+
 
 [即刻开始!](/README.md)
 
