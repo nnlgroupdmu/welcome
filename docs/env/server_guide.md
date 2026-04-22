@@ -10,7 +10,7 @@
     
 - **开发层 (SSH + VS Code)：** 推荐使用 VS Code 配合 Remote-Development 插件。所有代码编写、调试均在个人电脑端完成，通过 SSH 实时同步至服务器。
     
-- **计算层 (Docker)：** **原则上禁止在宿主机直接配实验环境。** 5090 显卡强制要求 PyTorch≥2.7.1，所有任务必须在 Docker 容器中运行，以实现环境完全隔离。
+- **计算层 (Docker)：** 不建议长期项目、主要项目、或新同学的首个项目直接在宿主机 conda 配实验环境。Docker container 并不比 conda env 更难配置。将所有任务在 Docker 容器中运行，可以实现完全隔离的安全环境。
     
 - **保活层 (Tmux)：** 位于宿主机与容器之间，负责在网络波动或关闭电脑时，保持训练进程和终端会话持续运行。
 
@@ -184,7 +184,7 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 **重要参考**：
 基于docker的深度学习配环境秘笈(配环境,看这一篇就够了) https://www.acwing.com/blog/content/62230/ 
 
-### 2.1 **使用镜像创建容器**
+### 2.1 使用镜像创建容器
 
 创建容器就是新建你的项目运行环境。注意：我们最好先下载代码，创建好需要的工作区目录。
 
@@ -212,7 +212,9 @@ docker ps -a
 docker run --name="YOUR_CONTAINER" --gpus all -it -v /PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel /bin/bash
 ```
 
-这里面 `/PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT ` 是 `[宿主机路径] 映射: [容器内路径]`，请务必设置，把项目的代码和数据集放到服务器端的 `[宿主机路径]`。为了保持清晰，通常建议宿主机路径与容器内路径保持一致。
+这里面 `/PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT ` 是 `[宿主机路径] 映射: [容器内路径]`，请务必设置，把项目的代码和数据集放到服务器端的 `[宿主机路径]`。另外，在使用此命令映射路径前，请确保 `/PATH/TO/YOUR/PROJECT` 已在宿主机，避免由 docker 自动创建目录带来权限不一致的问题。
+
+为了保持清晰，通常建议宿主机路径与容器内路径保持一致。
 
 之后这个项目就在容器里操作了。
 
@@ -246,7 +248,7 @@ docker rm 容器ID/名称
 
 
 
-### 2.2 **环境配置**
+### 2.2 环境配置
 
 由于使用了 docker，环境是非常独立而安全的，不需要再使用 conda。2026 年初几乎所有 conda 源全部失效。我们推荐使用 pip 安装环境。
 

@@ -7,8 +7,46 @@
   <meta name="description" content="Description">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    /* 基础链接样式 */
+    .sidebar-nav li a[href*="grafana"] {
+        padding-right: 60px !important; 
+        position: relative;
+        display: block; /* 确保链接撑满整行，让定位更准 */
+    }
+
+    /* 标签样式优化 */
+    .sidebar-nav li a[href*="grafana"]::after {
+        color: #ffffff;
+        content: "● LIVE";
+        font-size: 9px;     /* 稍微调小一点，更精致 */
+        font-weight: bold;
+        
+        display: inline-block;
+        vertical-align: middle;
+        /* 关键：通过左边距控制与标题的距离 */
+        margin-left: 10px; 
+        /* 关键：通过负的 margin 抵消对行高的影响 */
+        margin-top: -2px;
+        
+        background-color: #fd9099;
+        padding: 1px 4px;   /* 减小内边距 */
+        border-radius: 4px;
+        line-height: 1.2;   /* 锁定标签内部行高 */
+        white-space: nowrap;
+        /* ... 保持上面的代码不变 ... */
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.6; }
+        100% { opacity: 1; }
+    }
+  </style>
 </head>
 <body>
+  
   <div id="app"></div>
   <script>
     window.$docsify = {
