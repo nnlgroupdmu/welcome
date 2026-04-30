@@ -25,7 +25,7 @@
 |**1. 接入**|启动 Tailscale 并连接 SSH|使用 `ssh username@yf5090` 进入服务器|
 |**2. 保活**|创建或接入 Tmux 会话|`tmux a -t 项目名` 或 `tmux new -s 项目名`|
 |**3. 环境**|启动/进入 Docker 容器|`docker start 容器名` -> `docker exec -it ...`|
-|**4. 提交**|在宿主机环境提交训练任务|`ts -G 1 docker exec -i 容器名 python3 脚本`|
+|**4. 提交**|在宿主机 Task Spooler 提交训练任务|`ts -G 1 docker exec -i 容器名 python3 脚本`|
 |**5. 挂起**|脱离 Tmux 会话|快捷键 `Ctrl + B`, 然后按 `D` (此时可关闭电脑)|
 
 ### 三、核心注意事项
@@ -309,7 +309,7 @@ ts -G 1 docker exec -i my_container python3 /home/username/project/train.py --ep
 
 你可能需要的不仅是执行 `train.py`。比如，`source`、`conda activate`。
 
-这是**最推荐**的做法。你可以在宿主机写一个 `job.sh`。（推荐放在项目内。）
+这是**最推荐**的做法。你可以在宿主机写一个 `job.sh`。推荐放在项目根目录，下面的示例利用脚本的位置确定项目根目录。
 针对 docker 容器内部的环境配置方法，我们分三种情况讨论。
 
 #### 1. Root 环境（直接在容器系统中配置）
@@ -319,7 +319,7 @@ ts -G 1 docker exec -i my_container python3 /home/username/project/train.py --ep
 
 ```Bash
 #!/bin/bash
-# 1. 获取项目根目录
+# 1. 获取项目根目录（假设job脚本放在这儿）
 PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$PROJECT_ROOT"
 
@@ -412,7 +412,7 @@ A：使用 `docker exec` 时，**Python 脚本的路径必须是“容器内部�
 
 
 
-### 🛠️ 指令速查表
+### Task Spooler 指令速查表
 
 | **场景**           | **命令**                                 |
 | ---------------- | -------------------------------------- |
@@ -528,7 +528,7 @@ tmux attach -t train
 
 A：如果你发现不能左键拖动选中终端中的文本，这是因为 tmux 接管了鼠标逻辑。按住 `shift` 来执行常规的左键拖动选中。
 
-### tmux 常用命令
+### Tmux 指令速查表
 
 |**命令**|**功能**|
 |---|---|

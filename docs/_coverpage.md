@@ -38,11 +38,11 @@
     margin: 0;
   ">
     <li style="margin-bottom: 10px; display: flex; align-items: start;">
-      <span style="color: rgba(32, 32, 32, 0.4); margin-right: 15px;">2026-4-14</span>
-      <span>您可以点击右上 GitHub 按钮，任何想法可以在 issue/discussion 留言！ </span>
+      <span style="color: rgba(32, 32, 32, 0.4); margin-right: 15px;">2026-4-30</span>
+      <span>服务器新安装 Task Spooler 任务队列，自动管理任务排队和 GPU 分配，快来试试看吧！</span>
     <li style="display: flex; align-items: start;">
       <span style="color: rgba(32, 32, 32, 0.4); margin-right: 15px;">2026-4-14</span>
-      <span>我们在考虑准许个人用户使用conda代替docker，欢迎讨论！</span>
+      <span>您可以点击右上 GitHub 按钮，任何想法可以在 issue/discussion 留言！ </span>
   </ul>
 </div>
 
