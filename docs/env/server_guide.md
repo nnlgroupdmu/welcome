@@ -11,6 +11,8 @@
 - **开发层 (SSH + VS Code)：** 推荐使用 VS Code 配合 Remote-Development 插件。所有代码编写、调试均在个人电脑端完成，通过 SSH 实时同步至服务器。
     
 - **计算层 (Docker)：** 不建议长期项目、主要项目、或新同学的首个项目直接在宿主机 conda 配实验环境。Docker container 并不比 conda env 更难配置。将所有任务在 Docker 容器中运行，可以实现完全隔离的安全环境。
+
+- **调度层 (Task Spooler)：** 强烈建议的任务提交方式。一个轻量的、跨用户共享的任务队列，有自动分配空闲显卡的功能。
     
 - **保活层 (Tmux)：** 位于宿主机与容器之间，负责在网络波动或关闭电脑时，保持训练进程和终端会话持续运行。
 
@@ -23,18 +25,16 @@
 |**1. 接入**|启动 Tailscale 并连接 SSH|使用 `ssh username@yf5090` 进入服务器|
 |**2. 保活**|创建或接入 Tmux 会话|`tmux a -t 项目名` 或 `tmux new -s 项目名`|
 |**3. 环境**|启动/进入 Docker 容器|`docker start 容器名` -> `docker exec -it ...`|
-|**4. 运行**|指定显卡并开始训练|`CUDA_VISIBLE_DEVICES=0 python train.py`|
+|**4. 提交**|在宿主机环境提交训练任务|`ts -G 1 docker exec -i 容器名 python3 脚本`|
 |**5. 挂起**|脱离 Tmux 会话|快捷键 `Ctrl + B`, 然后按 `D` (此时可关闭电脑)|
 
 ### 三、核心注意事项
 
-- **硬件兼容性限制：** 由于 5090 Blackwell 架构较新，仅支持高版本 PyTorch。若旧项目依赖复杂且无法升级，请考虑使用 3090/2080 服务器。
+- **硬件兼容性限制：** 由于 5090 Blackwell 架构较新，仅支持高版本 `PyTorch>=2.7.1`，`CUDA>=12.8`。若旧项目依赖复杂且无法升级，请考虑使用 3090/2080 服务器。
     
-- **存储映射：** 创建容器时务必使用 `-v [宿主机路径]:[容器路径]` 进行挂载，否则容器一旦删除，其内部数据（如权重文件）将全部丢失。
+- **提交排队：** 请使用 `ts docker exec ...` 命令来提交训练任务，所有用户的任务将排队执行。
     
-- **显存礼仪：** 训练前请执行 `nvidia-smi` 查看占用，严禁在显存不足的情况下强行启动任务，以免导致集体宕机。
-    
-- **环境配置：** 容器内不推荐使用 Conda，建议直接通过 `pip install -r requirements.txt` 配置，并设置清华大学镜像源以确保速度。
+- **环境配置：** 容器内无需使用 Conda，建议直接通过 `pip install -r requirements.txt` 配置，并设置清华大学镜像源以确保速度。
 
 ---
 
@@ -67,7 +67,7 @@
 这一步有三种方式完成：
 1. Todesk 连接桌面操作（不保证长期可用） ；
 2. 在实验室线下操作桌面 ；
-3. 先依上文配置 tailscale ，再根据下文使用公共账号 `yangfan5090` 进行一次 ssh 连接（详见 1.3），并完成注册。
+3. 联系管理员进行注册。
 
 一旦打开终端，执行命令即可:
 
@@ -89,11 +89,6 @@ sudo usermod -aG docker username
     
 3. 输入密码登录。
 
-
-tailscale 公用账号 ssh 连接：
-```Plaintext
-yangfan5090@yf5090
-```
 
 tailscale ssh 个人连接：
 ```Plaintext
@@ -281,7 +276,158 @@ scipy==1.10.1
 pip install -r requirements.txt
 ```
 
-## 3  Tmux 终端复用
+
+## 3  任务队列 GPU Task Spooler
+
+[GPU Task Spooler](https://github.com/justanhduc/task-spooler)，简称 ts，是一个有助于轻松管理 CPU/GPU 任务的假脱机系统。你可以把它当成 SLURM（学校超算用的那个），但它适用于小型单个服务器而不是高性能集群。
+
+使用 ts 后，所有被提交的任务按顺序组成队列，通过我们设定好的窗口（两张显卡的窗口，同时允许两个任务）。ts 的美妙在于，你不再需要关心 CUDA_VISIBLE_DEVICES。只需通过 `-G` 参数指定需要的显卡数量，ts 将自动分配闲置显卡。（占用小于 10% 的显卡视为闲置）
+
+为了大家的任务能有序进行，**建议所有人都使用 ts 提交任务**。这样一来，无论是否有空闲的卡，您都可以用一致的一条命令把任务提交上去。
+
+要在宿主机通过 `ts` 启动容器内的 Python 任务，核心逻辑是：
+
+`ts [ts参数] docker exec [docker参数] 容器名 python3 脚本名`
+
+也就是说，和 docker 一节所介绍的 “先 exec 进入容器，然后在容器里执行任务脚本” 所不同，使用 ts 的命令必须在宿主机执行。 如上的命令可以实现在**宿主机环境执行容器中的脚本**。
+
+如果你把所有的库都装在了容器中系统的 `root` 环境下（即没有使用 Conda 或 venv 隔离），那么操作起来是更简单的。
+
+### 3.1 直接执行的逻辑
+
+在这种情况下，容器内的 `/usr/bin/python3`（或 `python`）就已经包含了你所需要的所有深度学习框架（PyTorch, TensorFlow 等）。你不需要执行任何“激活”动作，直接调用即可。
+#### 示例：提交一个训练任务到队列
+
+```Bash
+ts -G 1 docker exec -i my_container python3 /home/username/project/train.py --epochs 10
+```
+
+- **`-G 1`**: 告知 `ts` 该任务占用 1 个显卡。
+- **`docker exec`**: 在运行中的容器内执行命令。
+
+### 3.2 任务脚本：在宿主机脚本中处理激活等逻辑
+
+你可能需要的不仅是执行 `train.py`。比如，`source`、`conda activate`。
+
+这是**最推荐**的做法。你可以在宿主机写一个 `job.sh`。（推荐放在项目内。）
+针对 docker 容器内部的环境配置方法，我们分三种情况讨论。
+
+#### 1. Root 环境（直接在容器系统中配置）
+
+这是最简单的模式，环境是“全局可见”的。**特点**：不需要激活，直接调用。
+**job.sh 逻辑**：
+
+```Bash
+#!/bin/bash
+# 1. 获取项目根目录
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd "$PROJECT_ROOT"
+
+# 2. 导出路径（防止有些包没装进系统路径）
+export PYTHONPATH=$PROJECT_ROOT:$PYTHONPATH
+
+# 3. 直接执行
+# 此时 python3 指向的就是 /usr/bin/python3
+python3 train.py
+```
+
+#### 2. venv 环境（轻量级虚拟环境）
+
+`venv` 依赖于一个包含软链接的 `bin` 文件夹。**特点**：通过 `source` 脚本来修改当前 Shell 的 `PATH`。
+
+ **job.sh 逻辑**：
+
+```Bash
+#!/bin/bash
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd "$PROJECT_ROOT"
+
+# 1. 激活 venv
+# 必须使用 source，确保 PATH 被修改
+source ./.venv/bin/activate
+
+# 2. 执行（此时 python 自动指向 .venv 内部）
+python train.py
+```
+
+#### 3. Conda 环境（复杂的二进制包管理）
+
+Conda 不仅仅是 Python 环境，它还管理 C++ 库和 CUDA 运行时，因此它的激活逻辑最复杂。**特点**：直接 `source activate` 在非交互式 Shell（如 `docker exec`）中经常失效，必须先初始化 `conda shell`。
+**job.sh 逻辑**：
+
+```Bash
+#!/bin/bash
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd "$PROJECT_ROOT"
+
+# 1. 初始化 Conda 路径（关键：定位 conda.sh）
+# 常见的路径有 /opt/conda/etc/profile.d/conda.sh 或 ~/anaconda3/...
+CONDA_PATH="/opt/conda/etc/profile.d/conda.sh"
+if [ -f "$CONDA_PATH" ]; then
+    source "$CONDA_PATH"
+else
+    echo "Error: conda.sh not found!"
+    exit 1
+fi
+
+# 2. 激活环境
+conda activate my_env_name
+
+# 3. 执行
+python train.py
+```
+
+
+**然后用 `ts` 提交这个脚本：**
+
+```Bash
+ts -G 1 docker exec -i container bash /home/username/project/scripts/job_train.sh
+```
+注意修改容器名和路径。
+
+### 3.3 如何优雅地查看输出
+
+由于 `ts` 会捕获标准输出，而 Docker 的输出有时带有颜色字符，你可以这样操作：
+
+- **实时监控任务日志**：
+    
+    ```Bash
+    ts -c 0  # 0 是任务 ID
+    ```
+    
+    _注：这就像在看容器内部的实时控制台。_
+    
+
+- **查看任务状态列表**：
+    
+    ```Bash
+    ts
+    ```
+
+### 3.4 常见问题
+
+#### Q：找不到训练脚本的路径（Docker 路径映射）
+
+A：使用 `docker exec` 时，**Python 脚本的路径必须是“容器内部”的路径**。也因此，我们建议容器和宿主机的目录映射保持命名的一致，减少不必要的复杂性。
+
+
+
+### 🛠️ 指令速查表
+
+| **场景**           | **命令**                                 |
+| ---------------- | -------------------------------------- |
+| **查看当前队列**       | `ts`                                   |
+| **提交 Docker 任务** | `ts docker exec [Name] python3 [Path]` |
+| **强制占用 2 张卡**    | `ts -G 2 docker exec ...`              |
+| **实时看容器输出**      | `ts -c [ID]` (按 Ctrl+C 退出查看，不影响运行)     |
+| **停止/杀死任务**      | `ts -k [ID]`                           |
+| **清除已完成任务**      | `ts -C`                                |
+| **调整任务优先级**      | `ts -u [ID]` (把任务往上提)                  |
+
+
+
+
+## 4  Tmux 终端复用
 
 对于远程 SSH 开发，`tmux` 最核心的价值在于：解耦了“会话”与“连接”。尽管在我们的现代开发流程中，tmux 不再是必选项（vscode server 保护了 ssh 连接、docker daemon 保护了容器），它依然有重要意义：即便校园网断了、你合上了笔记本电脑、或者 SSH 掉线了，你重新连接后，只要重新连接`tmux`，那么`tmux`终端中**打开的窗口**、**终端的输出信息**都能瞬间“还原”。
 
@@ -316,7 +462,7 @@ apt-get install tmux
 >
 > 但是，这种嵌套显得臃肿。不作推荐。
 
-### 3.1 推荐的工作流程
+### 4.1 推荐的工作流程
 
 #### 第一步：创建并进入会话
 
@@ -357,9 +503,9 @@ tmux ls
 tmux attach -t train
 ```
 
-### 3.2 与 Docker 的完美配合
+### 4.2 与 Docker 的完美配合
 
-在你的 5090 服务器上，建议这样操作：
+在服务器上，建议这样操作：
 1. **先开 tmux**：登录 SSH 后立即 `tmux new -s my_project`。
 2. **进入 Docker**：在 `tmux` 窗口内执行 `docker run -it ... /bin/bash`。
 3. **开始训练**：在 Docker 内部跑起 Python 脚本。
@@ -375,22 +521,14 @@ tmux attach -t train
 
 看到显卡监控依然在跳动吗？这就是 `tmux` 的魅力。
 
-> [!info] 
-> 在开始训练任务前，养成查看显卡占用情况的习惯。通过显式指定使用的显卡，防止爆显存影响自己和其他同学的任务。
 
-#### **在命令行中指定显卡**
+### 4.3 常见问题
 
-这是最常用的方式，只对当前运行的这一个命令生效。
+#### Q：我不能拖动选中终端中的文本进行复制
 
-```Bash
-# 只使用 0 号显卡运行程序
-CUDA_VISIBLE_DEVICES=0 python train.py
-# 只使用 1 号显卡运行程序
-CUDA_VISIBLE_DEVICES=1 python train.py
-```
-- **注意**：`CUDA_VISIBLE_DEVICES` 必须放在命令的最前面，且中间没有空格。
+A：如果你发现不能左键拖动选中终端中的文本，这是因为 tmux 接管了鼠标逻辑。按住 `shift` 来执行常规的左键拖动选中。
 
-### 3.3 tmux 常用命令
+### tmux 常用命令
 
 |**命令**|**功能**|
 |---|---|
