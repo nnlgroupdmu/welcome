@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="cn">
+
 <head>
   <meta charset="UTF-8">
   <title>Document</title>
@@ -10,43 +11,56 @@
   <style>
     /* 基础链接样式 */
     .sidebar-nav li a[href*="grafana"] {
-        padding-right: 60px !important; 
-        position: relative;
-        display: block; /* 确保链接撑满整行，让定位更准 */
+      padding-right: 60px !important;
+      position: relative;
+      display: block;
+      /* 确保链接撑满整行，让定位更准 */
     }
 
     /* 标签样式优化 */
     .sidebar-nav li a[href*="grafana"]::after {
-        color: #ffffff;
-        content: "● LIVE";
-        font-size: 9px;     /* 稍微调小一点，更精致 */
-        font-weight: bold;
-        
-        display: inline-block;
-        vertical-align: middle;
-        /* 关键：通过左边距控制与标题的距离 */
-        margin-left: 10px; 
-        /* 关键：通过负的 margin 抵消对行高的影响 */
-        margin-top: -2px;
-        
-        background-color: #fd9099;
-        padding: 1px 4px;   /* 减小内边距 */
-        border-radius: 4px;
-        line-height: 1.2;   /* 锁定标签内部行高 */
-        white-space: nowrap;
-        /* ... 保持上面的代码不变 ... */
-        animation: pulse 2s infinite;
+      color: #ffffff;
+      content: "● LIVE";
+      font-size: 9px;
+      /* 稍微调小一点，更精致 */
+      font-weight: bold;
+
+      display: inline-block;
+      vertical-align: middle;
+      /* 关键：通过左边距控制与标题的距离 */
+      margin-left: 10px;
+      /* 关键：通过负的 margin 抵消对行高的影响 */
+      margin-top: -2px;
+
+      background-color: #fd9099;
+      padding: 1px 4px;
+      /* 减小内边距 */
+      border-radius: 4px;
+      line-height: 1.2;
+      /* 锁定标签内部行高 */
+      white-space: nowrap;
+      /* ... 保持上面的代码不变 ... */
+      animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.6; }
-        100% { opacity: 1; }
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
+
+      100% {
+        opacity: 1;
+      }
     }
   </style>
 </head>
+
 <body>
-  
+
   <div id="app"></div>
   <script>
     window.$docsify = {
@@ -66,8 +80,50 @@
       flexibleAlerts: {
         style: 'flat' // 推荐使用 flat 或 callout 风格，看起来非常专业
       }
+
     }
+    plugins: [
+      function (hook, vm) {
+        hook.doneEach(function () {
+          // 1. 每次页面加载完成后，手动创建一个容器来放评论
+          var container = document.createElement('div');
+          container.id = 'giscus-container';
+          container.style.marginTop = '50px'; // 离文档内容远一点
+          container.style.borderTop = '1px solid #eee';
+          container.style.paddingTop = '20px';
+
+          // 找到 Docsify 渲染内容的 DOM 节点（通常是 #main 或 article）
+          var content = document.querySelector('section.content');
+          if (content) {
+            // 先删掉旧的（如果有），再放个新的，防止评论框重复
+            var oldContainer = document.getElementById('giscus-container');
+            if (oldContainer) oldContainer.remove();
+            content.appendChild(container);
+
+            // 2. 动态创建 Giscus 脚本并塞进容器
+            var script = document.createElement('script');
+            script.src = 'https://giscus.app/client.js';
+            script.setAttribute('data-repo', 'nnlgroupdmu/welcome');
+            script.setAttribute('data-repo-id', 'R_kgDOR2368A');
+            script.setAttribute('data-category', 'General');
+            script.setAttribute('data-category-id', 'DIC_kwDOR2368M4C60PL');
+            script.setAttribute('data-mapping', 'pathname');
+            script.setAttribute('data-strict', '0');
+            script.setAttribute('data-reactions-enabled', '1');
+            script.setAttribute('data-emit-metadata', '0');
+            script.setAttribute('data-input-position', 'bottom');
+            script.setAttribute('data-theme', 'preferred_color_scheme');
+            script.setAttribute('data-lang', 'zh-CN');
+            script.setAttribute('crossorigin', 'anonymous');
+            script.async = true;
+
+            container.appendChild(script);
+          }
+        });
+      }
+    ]
   </script>
+
   <!-- Docsify v4 -->
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
@@ -78,4 +134,5 @@
   <!-- magic quote block -->
   <script src="https://unpkg.com/docsify-plugin-flexible-alerts"></script>
 </body>
+
 </html>
