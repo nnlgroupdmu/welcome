@@ -2,7 +2,7 @@
 
 # 欢迎使用实验室在线文档
 
-> 💪Make 506 great again!
+> 💪Make 506 greater ever!
 
 
 <div class="lab-notice-board" style="
@@ -37,13 +37,28 @@
     padding: 0;
     margin: 0;
   ">
-    <li style="margin-bottom: 10px; display: flex; align-items: start;">
-      <span style="color: rgba(32, 32, 32, 0.4); margin-right: 15px;">2026-4-30</span>
-      <span>服务器新安装 Task Spooler 任务队列，自动管理任务排队和 GPU 分配，快来试试看吧！</span>
-    <li style="display: flex; align-items: start;">
-      <span style="color: rgba(32, 32, 32, 0.4); margin-right: 15px;">2026-4-14</span>
-      <span>您可以点击右上 GitHub 按钮，任何想法可以在 issue/discussion 留言！ </span>
-  </ul>
+  <!-- 第一条 -->
+  <li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+    <span style="
+        color: rgba(32, 32, 32, 0.4); 
+        width: 60px; 
+        flex-shrink: 0; 
+        margin-right: 15px;
+    ">2026-4-30</span>
+    <span>服务器新安装 Task Spooler 任务队列，自动管理任务排队和 GPU 分配，快来试试看吧！</span>
+  </li>
+
+  <!-- 第二条 -->
+  <li style="display: flex; align-items: flex-start;">
+    <span style="
+        color: rgba(32, 32, 32, 0.4); 
+        width: 60px; 
+        flex-shrink: 0; 
+        margin-right: 15px;
+    ">2026-4-14</span>
+    <span>您可以点击右上 GitHub 按钮，任何想法可以在 issue/discussion 留言！ </span>
+  </li>
+</ul>
 </div>
 
 
