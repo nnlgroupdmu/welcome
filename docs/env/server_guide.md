@@ -10,7 +10,7 @@
     
 - **开发层 (SSH + VS Code)：** 推荐使用 VS Code 配合 Remote-Development 插件。所有代码编写、调试均在个人电脑端完成，通过 SSH 实时同步至服务器。
     
-- **计算层 (Docker)：** 不建议长期项目、主要项目、或新同学的首个项目直接在宿主机 conda 配实验环境。Docker container 并不比 conda env 更难配置。将所有任务在 Docker 容器中运行，可以实现完全隔离的安全环境。
+- **计算层 (Docker)：** 将所有任务在 Docker 容器中运行，可以实现完全隔离的安全环境。不建议长期项目、主要项目、或新同学的首个项目直接在宿主机 conda 配实验环境。Docker container 并不比 conda env 更难配置。
 
 - **调度层 (Task Spooler)：** 强烈建议的任务提交方式。一个轻量的、跨用户共享的任务队列，有自动分配空闲显卡的功能。
     
@@ -143,7 +143,7 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 | **特性**      | **Conda 虚拟环境**               | **Docker 容器**                          |
 | ----------- | ---------------------------- | -------------------------------------- |
 | **隔离程度**    | **半隔离**。仅隔离 Python 包。        | **全隔离**。隔离了操作系统、系统库和 GPU 驱动接口。         |
-| **一致性**     | 换台机器可能因为系统库不同而报错。            | 镜像在哪运行都一模一样（Build once, run anywhere）。 |
+| **一致性**     | 换台机器可能因为系统库不同而报错。            | 镜像在哪运行都一模一样|
 | **CUDA 管理** | 经常遇到 Conda CUDA 与系统 CUDA 冲突。 | 镜像内置匹配好的 CUDA，开发者无需配置宿主机 CUDA。         |
 | **清理难度**    | 卸载不干净容易残留垃圾文件。               | 删除容器/镜像即可彻底关掉并释放资源。                    |
 
@@ -152,32 +152,31 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 作为新用户，你只需要掌握这四个核心步骤即可开始实验：
 
 - 第一步：挑选镜像
-根据项目需求（如 PyTorch 版本），从实验室仓库挑选镜像。（包含 Pytorch 镜像和更基础的 ubuntu 镜像等。如有特殊需求，联系管理员拉取新镜像）
+根据项目需求（如 PyTorch 版本），从实验室仓库挑选镜像。（强烈推荐管理员制作的基础镜像 `base_image` 。服务器上也包含 Pytorch 镜像和更基础的 ubuntu 镜像等。如有特殊需求，联系管理员拉取新镜像）
 
 - 第二步：创建容器 (Run)
 使用 docker run 命令创建容器，会自动启动（start）容器。关键点是要把服务器上的代码目录“映射”到容器里，这样你在容器里改代码，服务器的文件也会同步变。容器只需创建一次，除非删除，会一直保持你的项目环境。
 
 - 第三步：进入容器开发 (Exec)
-通过 VS Code 的远程插件或命令行，使用 docker exec 进入容器内部，像在普通 Linux 终端一样执行 python train.py。若容器未启动（stop），须先启动（start）
+通过 VS Code 的远程插件或命令行，使用 SSH 连接容器或使用 docker exec 进入容器内部。在容器里你可以配置环境、调试程序。若容器未启动（stop），须先启动（start）
 
-- 第四步：保存/停止 (Stop)
+- 第四部：提交训练任务（ts）
+为了大家有序利用GPU，把你的训练任务提交排队。形如：ts [ts参数] docker exec [docker参数] 容器名 python3 脚本名。详见[第3章](#3--任务队列-gpu-task-spooler)。
+
+- 第五步：保存/停止 (Stop)
 实验结束或需要修改配置时，可以停止容器（不是删除！）。如果环境配置非常辛苦，还可以把容器“导出”成新镜像。
 
 
 
 > [!WARNING]
-> 由于 5090 全新的 Blackwell 架构，必须使用 **Pytorch >= 2.7.1**提供 GPU 计算支持，而高的 Pytorch 版本只支持高的 Python 版本。
+> 由于 5090 全新的 Blackwell 架构，必须使用 `PyTorch>=2.7.1`，`CUDA>=12.8` 提供 GPU 计算支持，而高的 Pytorch 版本只支持高的 Python 版本。
 > 
-> 因此，旧版本 Pytorch 是不可用的，所以我们提供推荐的**基础镜像**（已在5090服务器上）： [pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel](https://hub.docker.com/layers/pytorch/pytorch/2.7.1-cuda12.8-cudnn9-devel/images/sha256-3d614dfd422b7e43647491cbf07d6acc516c032fc49c594a94afdebd52552fb9)
+> 因此，旧版本 Pytorch 是不可用的，所以我们基于 Pytorch 的**基础镜像**： [pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel](https://hub.docker.com/layers/pytorch/pytorch/2.7.1-cuda12.8-cudnn9-devel/images/sha256-3d614dfd422b7e43647491cbf07d6acc516c032fc49c594a94afdebd52552fb9) 加上了一些基础组件，构建了供大家使用的基础镜像（base_image）
 > 
-> 配置新项目环境时，我们推荐从这个基础镜像开始，**优先保证 Pytorch 的版本正确**，调整其他包的版本，以及利用 AI 调整项目的旧版本 Pytorch 代码。如果你有需要其他镜像的情况，可先使用 `docker images` 查看服务器本地是否有该镜像，若无，请联系管理员拉取镜像。
+> 配置新项目环境时，我们强烈推荐从这个基础镜像开始，**优先保证 Pytorch 的版本正确**，调整其他包的版本，以及利用 AI 调整项目的旧版本 Pytorch 代码。如果你有需要其他镜像的情况，可先使用 `docker images` 查看服务器本地是否有该镜像，若无，请联系管理员拉取镜像。
 
 因此，如果您的需求是**环境依赖复杂的旧项目**，训练不密集的情况，考虑我们的 3090 或 2080 服务器 可能是更优的。
 
-
-
-**重要参考**：
-基于docker的深度学习配环境秘笈(配环境,看这一篇就够了) https://www.acwing.com/blog/content/62230/ 
 
 ### 2.1 使用镜像创建容器
 
@@ -197,49 +196,64 @@ mv XXXXX project_name
 
 我们已经有了代码和项目文件夹，下一步就是创建容器，并把项目文件夹路径映射到容器内。
 
-一般的，建议以我们的 Pytorch 基础镜像创建容器，获得可用的 Pytorch：
+以我们推荐的的基础镜像为例：
 
 ```bash
 # 查看所有容器
 docker ps -a
 
 # 新建容器 注意替换容器名和项目路径
-docker run --name="YOUR_CONTAINER" --gpus all -it -v /PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel /bin/bash
+docker run -d \
+  --name="[用户名]_[项目名]" \
+  --gpus all \
+  --shm-size=48g \
+  -p [10000-19999之间的唯一端口]:22 \
+  -v /home/[用户名]/[项目文件夹]:/home/[用户名]/[项目文件夹] \
+  -v /disk2:/disk2:ro \
+  --restart always \
+  --env LANG=C.UTF-8 \
+  base_image:v1
 ```
 
-这里面 `/PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT ` 是 `[宿主机路径] 映射: [容器内路径]`，请务必设置，把项目的代码和数据集放到服务器端的 `[宿主机路径]`。另外，在使用此命令映射路径前，请确保 `/PATH/TO/YOUR/PROJECT` 已在宿主机，避免由 docker 自动创建目录带来权限不一致的问题。
+- **端口建议**：请在 `10001-19999` 之间选择一个未被占用的唯一端口。
+    
+- **数据挂载**：`/disk2` 为公共只读盘，存放方便大家取用的大型公共数据集、归档文件、一些预下载的软件包；你的个人代码请存放在 `/home/[用户名]` 下。
 
-为了保持清晰，通常建议宿主机路径与容器内路径保持一致。
+这里面 `/PATH/TO/YOUR/PROJECT:/PATH/TO/YOUR/PROJECT ` 是 `[宿主机路径] 映射: [容器内路径]`，请务必设置，然后把项目的代码和数据集放到服务器端的 `[宿主机路径]`。
 
-之后这个项目就在容器里操作了。
+之后这个项目就在容器里操作了。你可以通过指令进入容器内部：
 
-后续进入容器：当你下次想要进入已经创建好的容器时，使用：
-
-```Bash
-docker start my_container  # 先启动
-docker exec -it my_container /bin/bash  # 再进入
+```bash
+docker exec -it [容器名] /bin/bash
 ```
 
-常用命令：
+或者，你可以利用配置的端口号，直接把 VS Code 通过 ssh 连到容器内部，这样更方便使用 ai agent 调用容器环境。这是最推荐的开发方式，体验与本地写代码一致。
 
-``` bash
-# 查看已有镜像
-docker images
-# 查看历史容器
-docker ps -a
-# 查看当前运行的容器
-docker ps
-# 启动容器
-docker start 容器名
-# 停止容器
-docker stop 容器名
-# 进入容器
-docker exec -it 容器名 /bin/bash
-# 退出容器
-exit
-# 删除容器
-docker rm 容器ID/名称
-```
+1. **安装插件**：确保本地 VS Code 安装了 `Remote - SSH` 插件。
+2. **添加主机**：点击左下角 `> <` 图标 -> `Open SSH Config File`，添加以下配置：
+
+    ```Plaintext
+    Host [容器名]
+        HostName 192.168.31.240
+        User root
+        Port [你设置的端口1XXXX]
+    ```
+    
+3. **登录**：点击VS code左下角 `> <` 按钮 -> Connect to Host -> 选择容器名点击连接，初始密码为：`123456`。（你可以修改，以及配置免密登录）
+
+进入容器后，你可以运行以下命令确认环境正常：
+
+- **检查 GPU**：`nvidia-smi`
+    
+- **检查 PyTorch**：`python -c "import torch; print(torch.cuda.is_available())"`
+    
+- **检查编译器**：`nvcc -V`
+
+#### 提醒：
+
+1. **持久化**：请务必将代码、实验日志、模型权重保存在你的 `/home/[用户名]` 挂载目录下。删除容器不会丢失这些数据，但存放在容器其他路径（如 `/root`）的数据在容器删除后会**永久消失**。
+    
+2. **公共资源**：`/disk2` 为只读挂载，请勿尝试在该目录下生成日志或保存模型。
 
 
 
@@ -249,7 +263,7 @@ docker rm 容器ID/名称
 
 既然镜像里已经预装了对应 CUDA 12.8 的高性能 Python 和 PyTorch，直接用 `pip` 是最稳的。
 
-**永久更换 Pip 源为国内镜像：**
+**永久更换 Pip 源为国内镜像（我们提供的基础镜像默认启用了这个设置）：**
 
 ``` Bash
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
@@ -276,6 +290,52 @@ scipy==1.10.1
 pip install -r requirements.txt
 ```
 
+### Docker 指令速查表
+
+``` bash
+# 查看已有镜像
+docker images
+# 查看所有容器
+docker ps -a
+# 查看当前运行的容器
+docker ps
+# 启动容器
+docker start 容器名
+# 停止容器
+docker stop 容器名
+# 进入容器
+docker exec -it 容器名 /bin/bash
+# 退出容器
+exit
+# 删除容器
+docker rm 容器ID/名称
+```
+
+### 附录
+
+#### base_image 镜像特性（具体可查 Dockerfile）
+
+1. 远程开发支持 (SSH-Native)
+服务常驻：内置 openssh-server，启动即监听 22 端口。等同于手动执行 apt install openssh-server && /usr/sbin/sshd -D。
+认证打通：预设 root 密码并允许远程登录。修改了 /etc/ssh/sshd_config 中的 PermitRootLogin。
+连接优化：放宽了 PAM 模块对 loginuid 的限制，解决 VS Code Remote-SSH 连接时的身份校验延迟与断连问题。
+
+2. 环境变量持久化 (Path-Fixed)
+全场景生效：路径注入 /etc/environment 和 /etc/profile。
+免配置调用：确保 SSH 登录后可直接识别 python, nvcc, conda。效果等同于每次登录手动执行 export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH。
+Shell 兼容：通过 ~/.bashrc 自动 source /etc/profile，确保 docker exec 与 ssh 终端环境一致。
+
+3. 国内网络加速 (Mirror-Standard)
+APT 换源：/etc/apt/sources.list 已切换至清华大学镜像。等同于手动执行 sed -i 替换官方域名。
+PIP 换源：全局配置 index-url 为清华源。等同于手动执行 pip config set global.index-url ...。
+
+4. 系统级依赖补全 (Lib-Dependency)
+视觉算法支持：预装 libgl1-mesa-glx 和 libglib2.0-0。解决 import cv2 (OpenCV) 时常见的 .so 动态库缺失报错。
+基础工具链：集成 vim, tmux, git, wget, curl。满足在容器内进行文本编辑、长耗时任务挂起与版本控制的需求。
+
+**本章重要参考**：
+基于docker的深度学习配环境秘笈(配环境,看这一篇就够了) https://www.acwing.com/blog/content/62230/ 
+
 
 ## 3  任务队列 GPU Task Spooler
 
@@ -293,7 +353,7 @@ pip install -r requirements.txt
 
 如果你把所有的库都装在了容器中系统的 `root` 环境下（即没有使用 Conda 或 venv 隔离），那么操作起来是更简单的。
 
-### 3.1 直接执行的逻辑
+### 3.1 一句话提交任务
 
 在这种情况下，容器内的 `/usr/bin/python3`（或 `python`）就已经包含了你所需要的所有深度学习框架（PyTorch, TensorFlow 等）。你不需要执行任何“激活”动作，直接调用即可。
 #### 示例：提交一个训练任务到队列
@@ -409,6 +469,16 @@ ts -G 1 docker exec -i container bash /home/username/project/scripts/job_train.s
 #### Q：找不到训练脚本的路径（Docker 路径映射）
 
 A：使用 `docker exec` 时，**Python 脚本的路径必须是“容器内部”的路径**。也因此，我们建议容器和宿主机的目录映射保持命名的一致，减少不必要的复杂性。
+
+#### Q：我的 ts 训练任务不想跑了，怎么停止？
+
+A：先杀 ts 任务，再关容器内的 python。为了减少这种困惑，**请尽量在提交时确定需要跑的轮次，不要依赖手动停止**！控制好自己的运行时间，共同维护排队秩序！
+```bash
+ts  # 查看 ts 任务列表
+ts -k [id]  # 停止你的任务
+docker ps   # 查看所有运行的容器
+docker exec -i [容器名] pkill -f python # 停掉你容器中的 Python
+```
 
 
 
