@@ -44,7 +44,7 @@
         width: 60px; 
         flex-shrink: 0; 
         margin-right: 15px;
-    ">2026-4-30</span>
+    ">2026-5-8</span>
     <span>我们更新了基础镜像和创建容器的模板指令，新建容器请注意使用新指令！</span>
   </li>
 
