@@ -2,6 +2,24 @@
 
 欢迎使用实验室 **5090 Blackwell 架构服务器**。本服务器专为高性能深度学习任务设计，为了确保资源的高效利用与环境的稳定隔离，请遵循以下架构逻辑与工作流程。
 
+如果您需要寻求 AI 帮助，可以在对话的开头使用如下的提示词：
+```Prompt
+你正在协助一名使用实验室共享深度学习服务器的研究生/学生用户排查问题或配置环境。请始终默认以下前提：
+
+1. 服务器是实验室公共共享机器，宿主机权限受限，普通用户默认没有 root/sudo 权限；任何涉及宿主机提权、修改系统服务、改 Docker daemon、改驱动、改用户组等操作，都应视为管理员级操作，除非明确说明可由管理员执行，否则不要默认用户可以直接执行。
+2. 用户的主要工作环境应以 Docker 容器为基本单元；优先给出容器内完成的方案。宿主机主要用于 SSH 登录、tmux 保活、docker 管理、任务调度，不应默认在宿主机直接安装复杂深度学习环境。
+3. 用户主要在服务器上进行深度学习实验、训练、调试、运行 Python/PyTorch 相关任务。请优先给出适合 Linux + Docker + SSH 的命令与操作步骤。
+4. 这台服务器是 5090 Blackwell 架构，环境通常要求较新的 PyTorch / CUDA 版本；如果你建议依赖较旧版本库，请先说明兼容性风险，并尽量给出面向新版本环境的替代方案。
+5. 用户常用工作流是：本地电脑通过 Tailscale / SSH / VS Code Remote Development 连接服务器；在宿主机使用 tmux 保活；在 Docker 容器内配置项目环境并运行训练；通过所有用户共享的 task spooler（ts）在宿主机提交容器内任务。
+6. 请尽量避免给出以下不适合该场景的建议：在宿主机上直接 sudo 安装依赖、默认使用 conda 作为首选、默认修改系统级配置、默认把代码和日志写在容器不可持久化路径、默认忽略 Docker 挂载路径与权限问题。
+7. 回答时请明确区分“宿主机”和“容器内”两种环境；若命令会在不同环境执行，请分别标注。
+8. 若问题存在多种解决方式，请优先推荐最稳妥、最适合共享服务器和容器化工作流的方案，并说明原因。
+9. 如果某一步需要管理员权限、需要重启服务、可能影响其他用户、或可能破坏现有环境，请先明确提示风险，不要直接默认执行。
+10. 若信息不足，请基于共享服务器、Docker、SSH、tmux、ts 的常见运维场景给出最小假设下的可执行建议，而不是要求用户先做大量额外操作。
+
+我的实际问题是：{在这里填写具体问题}
+```
+
 ### 一、整体架构概览
 
 本服务器采用**“云端组网 + 容器隔离 + 终端复用”**的三层架构，确保你在任何地方都能拥有稳定、一致的开发体验。
@@ -147,9 +165,9 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 | **CUDA 管理** | 经常遇到 Conda CUDA 与系统 CUDA 冲突。 | 镜像内置匹配好的 CUDA，开发者无需配置宿主机 CUDA。         |
 | **清理难度**    | 卸载不干净容易残留垃圾文件。               | 删除容器/镜像即可彻底关掉并释放资源。                    |
 
-#### Docker 核心工作流：四步走
+#### Docker 核心工作流
 
-作为新用户，你只需要掌握这四个核心步骤即可开始实验：
+作为新用户，你只需要掌握核心步骤即可开始实验：
 
 - 第一步：挑选镜像
 根据项目需求（如 PyTorch 版本），从实验室仓库挑选镜像。（强烈推荐管理员制作的基础镜像 `base_image` 。服务器上也包含 Pytorch 镜像和更基础的 ubuntu 镜像等。如有特殊需求，联系管理员拉取新镜像）
@@ -160,7 +178,7 @@ type $env:USERPROFILE\.ssh\id_rsa.pub | ssh YOUR_NAME@yf5090 "mkdir -p ~/.ssh &&
 - 第三步：进入容器开发 (Exec)
 通过 VS Code 的远程插件或命令行，使用 SSH 连接容器或使用 docker exec 进入容器内部。在容器里你可以配置环境、调试程序。若容器未启动（stop），须先启动（start）
 
-- 第四部：提交训练任务（ts）
+- 第四步：提交训练任务（ts）
 为了大家有序利用GPU，把你的训练任务提交排队。形如：ts [ts参数] docker exec [docker参数] 容器名 python3 脚本名。详见[第3章](#3--任务队列-gpu-task-spooler)。
 
 - 第五步：保存/停止 (Stop)
@@ -201,6 +219,8 @@ mv XXXXX project_name
 ```bash
 # 查看所有容器
 docker ps -a
+# 查看已占用端口
+checkport
 
 # 新建容器 注意替换容器名和项目路径
 docker run -d \
@@ -215,7 +235,7 @@ docker run -d \
   base_image:v1
 ```
 
-- **端口建议**：请在 `10001-19999` 之间选择一个未被占用的唯一端口。
+- **端口建议**：请在 `10001-19999` 之间选择一个未被占用的唯一端口。在终端执行 `checkport` 查看已占用端口。如果你不知道怎么选，可以用“1+学号后两位+两位项目编号”。
     
 - **数据挂载**：`/disk2` 为公共只读盘，存放方便大家取用的大型公共数据集、归档文件、一些预下载的软件包；你的个人代码请存放在 `/home/[用户名]` 下。
 
@@ -369,7 +389,7 @@ ts -G 1 docker exec -i my_container python3 /home/username/project/train.py --ep
 
 你可能需要的不仅是执行 `train.py`。比如，`source`、`conda activate`。
 
-这是**最推荐**的做法。你可以在宿主机写一个 `job.sh`。推荐放在项目根目录，下面的示例利用脚本的位置确定项目根目录。
+这是**最推荐**的做法。你可以在宿主机写一个 `job_train.sh`。推荐在项目根目录下开一个 `project/jobs` 文件夹专门放需要的任务脚本，下面的示例利用脚本的位置确定项目根目录。
 针对 docker 容器内部的环境配置方法，我们分三种情况讨论。
 
 #### 1. Root 环境（直接在容器系统中配置）
@@ -379,8 +399,8 @@ ts -G 1 docker exec -i my_container python3 /home/username/project/train.py --ep
 
 ```Bash
 #!/bin/bash
-# 1. 获取项目根目录（假设job脚本放在这儿）
-PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+# 1. 获取项目根目录（假设job脚本放在 project/jobs/job_train.sh，利用"/.."找上一级的项目根目录 ）
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/..
 cd "$PROJECT_ROOT"
 
 # 2. 导出路径（防止有些包没装进系统路径）
@@ -399,7 +419,7 @@ python3 train.py
 
 ```Bash
 #!/bin/bash
-PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/..
 cd "$PROJECT_ROOT"
 
 # 1. 激活 venv
@@ -417,7 +437,7 @@ Conda 不仅仅是 Python 环境，它还管理 C++ 库和 CUDA 运行时，因�
 
 ```Bash
 #!/bin/bash
-PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/..
 cd "$PROJECT_ROOT"
 
 # 1. 初始化 Conda 路径（关键：定位 conda.sh）
@@ -441,7 +461,7 @@ python train.py
 **然后用 `ts` 提交这个脚本：**
 
 ```Bash
-ts -G 1 docker exec -i container bash /home/username/project/scripts/job_train.sh
+ts -G 1 docker exec -i [容器名] bash /home/yourname/project/jobs/job_train.sh
 ```
 注意修改容器名和路径。
 

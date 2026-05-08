@@ -45,7 +45,7 @@
         flex-shrink: 0; 
         margin-right: 15px;
     ">2026-4-30</span>
-    <span>服务器新安装 Task Spooler 任务队列，自动管理任务排队和 GPU 分配，快来试试看吧！</span>
+    <span>我们更新了基础镜像和创建容器的模板指令，新建容器请注意使用新指令！</span>
   </li>
 
   <!-- 第二条 -->
