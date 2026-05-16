@@ -10,7 +10,7 @@ GitHub 项目 [clash-for-linux-install](https://github.com/nelvko/clash-for-linu
 > - 自动识别系统架构与初始化系统，下载匹配的内核与依赖，并生成对应的服务管理配置。
 > - 在需要时调用 [subconverter](https://github.com/tindy2013/subconverter) 进行本地订阅转换。
 
-然而，初次使用仍然会遇到下载过慢、需手动下载其依赖的问题。5090 服务器已提供归档的软件包，您可以随意拷贝和下载使用 `/disk2/archive/clash-for-linux-share.tar.gz`
+然而，初次使用仍然会遇到下载过慢、需手动下载其依赖的问题。5090 服务器已提供归档的软件包，您可以随意拷贝和下载使用 `/disk2/archive/clash-for-linux-install/clash-for-linux-share.tar.gz`
 
 > Beta:
 > 尝试我们的内网软件站点进行下载：
@@ -27,7 +27,7 @@ GitHub 项目 [clash-for-linux-install](https://github.com/nelvko/clash-for-linu
 mkdir -p ~/clash_test && cd ~/clash_test
 
 # 2. 从服务器公共归档位置拷贝安装包
-cp /disk2/archive/clash-for-linux-share.tar.gz .
+cp /disk2/archive/clash-for-linux-install/clash-for-linux-share.tar.gz .
 
 # 3. 解压软件包
 tar -xzvf clash-for-linux-share.tar.gz
@@ -42,12 +42,12 @@ cd clash-for-linux-install/
 bash install.sh
 ```
 
-### 📋 注意事项：端口冲突处理
+### 注意事项：端口冲突处理
 
 安装过程中，如果看到以下提示，请**记录**脚本生成的端口，以备登录 Web 控制台需要：
-*   **🎯 端口冲突 [mixed-port]**：这是你的代理端口（如 `29017`），用于程序代理。
-*   **🎯 端口冲突 [external-controller]**：这是你的控制台端口（如 `49981`），用于 Web 界面管理，需要在登录 Web 控制台时填入。
-*   **😼 当前密钥 (Secret)**：用于登录 Web 控制台的凭证，需要在登录 Web 控制台时填入。
+*   🎯 端口冲突 [mixed-port]：这是你的代理端口（如 `29017`），用于程序代理。
+*   🎯 端口冲突 [external-controller]：这是你的控制台端口（如 `49981`），用于 Web 界面管理，需要在登录 Web 控制台时填入。
+*   😼 当前密钥 (Secret)：用于登录 Web 控制台的凭证，需要在登录 Web 控制台时填入。
 
 ## 三、 配置订阅链接
 安装完成后，系统会提示你输入订阅链接。如果错过提示，可使用命令行手动添加并激活：

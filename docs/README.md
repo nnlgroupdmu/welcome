@@ -1,16 +1,24 @@
-# 欢迎使用506实验室在线文档
+# 欢迎使用 506 实验室在线文档
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docsify](https://img.shields.io/badge/docsify-4.0-blue.svg)](https://docsify.js.org/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/nnlgroupdmu/welcome/graphs/commit-activity)
 
-欢迎使用最新的5090服务器！请按[深度学习服务器指南](env/server_guide.md)进行配置。
+欢迎使用实验室最新的 5090 服务器！请参考[深度学习服务器指南](env/server_guide.md)进行配置。
 
-服务器仅限实验室 WiFi 局域网环境访问；外网环境请联系管理员获取公用账号。
+服务器可在实验室 WiFi 局域网环境直接连接；公网环境请联系管理员获取 Tailscale 账号。
 
-🚀 登录地址: 
+🚀 5090 服务器内网地址: 
 ```Plaintext
-ssh username@192.168.31.240
+192.168.31.240
+```
+🚀 5090 服务器 Tailscale 地址: 
+```Plaintext
+yf5090
+```
+或
+```Plaintext
+100.68.153.123
 ```
 
 ---
@@ -29,9 +37,11 @@ ssh username@192.168.31.240
 
 📂 存储说明
 
-个人目录: /home/username (建议放代码和模型)
+个人目录: /home/username (工作区，建议放代码和模型)
 
-归档 / 拷贝中转（用户只读）: /disk2
+归档、软件分享: /disk2/archive（管理员维护，用户只读）
+
+公共数据区：/disk2/public（用于存储、分享、内网提交）
 
 移动存储设备: /media/yangfan5090/*your_usb_stick_name* （提前在自己电脑上改名，不要有空格、中文）
 
