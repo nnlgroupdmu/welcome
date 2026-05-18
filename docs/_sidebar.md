@@ -1,6 +1,7 @@
 * [📖 欢迎使用在线文档](README.md)
 * [🖥️ 服务器指南](env/server_guide.md)
+* [🏠 内网服务导航](inter_navi.md)
+* [📡 内网接入指南](vpn_guide.md)
 * [🛜 网络代理指南](env/network_guide.md)
-* [🧭 内网服务导航](inter_navi.md)
 * [⌛ 显卡资源监控](https://nnlgroupdmu.grafana.net/public-dashboards/c9c3072861c34bc8bba455495c7c866b?kiosk:ignore_blank)
 * [📑 更新历史](updates.md)
