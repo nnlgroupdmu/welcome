@@ -1,7 +1,6 @@
 ## 实验室 Tailscale 入网指南
 
-> [!INFO]
-> 以 5090 服务器为核心，实验室内网已部署多项网络服务。同学们需要接入我们的 Tailscale 远程组网，才能在实验室 WiFi 环境之外访问内网。建议每位同学都接入使用，按照以下步骤配置。
+以 5090 服务器为核心，实验室内网已部署多项网络服务。同学们需要接入我们的 Tailscale 远程组网，才能在实验室 WiFi 环境之外访问内网。建议每位同学都接入使用，按照以下步骤配置。
 
 ### ⏱️ 公开入网申请时间
 
@@ -19,10 +18,10 @@
 
 #### 第二步：一键命令行激活
 
-请打开你电脑的终端（Windows 同学搜索并打开 `PowerShell`；Mac 同学打开 `Terminal`），将下面命令中的“user-laptop”**替换为你自己的** 用户名-设备名（笔记本填laptop 就行），将上面的 `tskey-auth-...` 替换为我们提供的那一串密钥，然后整行复制并回车运行：
+请打开你电脑的终端（Windows 同学搜索并打开 `PowerShell`；Mac 同学打开 `Terminal`），将下面命令中的“user-laptop”**替换为你自己的** 用户名-设备名（笔记本填laptop 就行），填上我们提供的那一串密钥，然后整行复制并回车运行：
 
 ```PowerShell
-& "C:\Program Files\Tailscale\tailscale.exe" up --authkey tskey-auth-xxxxxx-xxxxxxxxxxxxxx --hostname user-laptop
+& "C:\Program Files\Tailscale\tailscale.exe" up --authkey <密钥> --hostname user-laptop
 ```
 
 *注：如果你的 Tailscale 安装位置不同请注意修改；使用 CMD 请去掉前面的* `& `。
@@ -32,14 +31,14 @@
 Mac / Linux 用户打开 Terminal（终端），直接运行以下标准命令：
 
 ```Bash
-tailscale up --authkey tskey-auth-xxxxxx-xxxxxxxxxxxxxx --hostname user-laptop
+tailscale up --authkey <密钥> --hostname user-laptop
 ```
 
 #### 第三步：自主登记（等待管理员审核通网）
 
 1. 运行完上述命令后，在终端输入 `tailscale ip -4`（或者右键点击右下角 Tailscale 图标），查看并记录你的设备名、分配给你的 **100.X.X.X** 开头的虚拟 IP。
     
-2. 打开群里的在线统计表格：👉 **[点击此处填写腾讯文档]**，登记你的：`姓名`、`设备类型`、`Tailscale IP`。补录可以私信管理员。
+2. 公开入网期间打开群里的在线统计表格：👉 [点击此处填写腾讯文档]，登记你的：`姓名`、`设备类型`、`Tailscale IP`。补录可以私信管理员。
 
 ---
 

@@ -61,7 +61,33 @@
         opacity: 1;
       }
     }
+      /* 1. 强行重置 Docsify 对首页超链接和文本的全局污染 */
+    .portal-grid a.portal-card, 
+    .portal-grid a.portal-card:hover {
+      color: #2c3e50 !important;
+      text-decoration: none !important;
+      border-bottom: 1px solid #e1e4e8 !important; /* 防止Docsify强加下划线 */
+    }
+
+    /* 2. 强行纠正卡片内段落的行高和边距 */
+    .portal-card .card-content p,
+    .portal-card p {
+      margin: 0 0 16px 0 !important;
+      padding: 0 !important;
+      line-height: 1.6 !important;
+      color: #6a737d !important;
+    }
+
+    /* 3. 强行重置标题 */
+    .portal-card h4 {
+      margin: 0 0 8px 0 !important;
+      font-size: 18px !important;
+      font-weight: 600 !important;
+      color: #2c3e50 !important;
+      border-bottom: none !important; /* 防止Docsify把h4当成文档标题加下划线 */
+    }
   </style>
+
 </head>
 
 <body>
@@ -71,6 +97,7 @@
     window.$docsify = {
       name: '实验室在线文档',
       repo: 'https://github.com/nnlgroupdmu/welcome',
+      // homepage: 'README.md',
       subMaxLevel: 3, // 抓取正文中的标题显示在侧边栏
       auto2top: true, // 切换页面后自动回到顶部
       loadSidebar: true,
@@ -104,7 +131,7 @@
         function (hook, vm) {
           hook.doneEach(function () {
             // 定义你不想要评论区的页面路径
-            var blacklist = ['/', '/README'];
+            var blacklist = ['/', '/README','/inter_navi'];
 
             var path = vm.route.path;
             var giscusContainer = document.querySelector('.giscus');
