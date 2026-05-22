@@ -41,12 +41,7 @@ import {
 import { NavItem, ServiceAsset, MemoPost } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
 
-import React from 'react';
 import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入公告
-import Navbar from './components/Navbar';
-import MainDashboard from './components/MainDashboard';
-// ...你的其他原有引入
-
 
 
 export default function App() {

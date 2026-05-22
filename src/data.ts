@@ -128,21 +128,8 @@ python run_eval.py --model_path /data/models/llama-3.1-8b/
     linkUrl: '#about',
     category: '关于本站',
     isInternalOnly: false,
-    contentMarkdown: `### 🌐 本站建设机制 与 Tailscale 精细化安全组网
-
-本站作为**软件工程与大模型实验室的日常门户大本营**，致力于为在校研究生、指导老师及毕业校友提供纯粹、极速的数据交互跳板。
-
-#### 零信任内网访问：为什么需要 Tailscale？
-1. **防止端口泄露**: 实验室部署的各类开源看板工具 (如 Memos 轻量备忘、AList 聚合文件等) 大多缺乏工业级安全防火墙保护。暴露于外网易受到暴力破解或已知 0day 渗透。
-2. **两路协同**: 本站特为所有站内工具提供了**物理内网/Tailscale 零信任网络**双向出口通道。
-   * **物理内网路**: 当你的终端设备物理插线，或在教研室连接实验室专属 Wi-Fi (\`Lab-5G-HighSpeed\`) 时，使用 \`10.12.8.x\` 局域网直接通联。
-   * **Tailscale 零信任路**: 当你回宿宿舍、出差海外或在家办公时，终端开启 Tailscale 连接我们的实验室虚拟局域网 \`LabZeroNet\`，直接以统一专属域名无阻秒级跳转，彻底告别配置繁杂的 OpenVPN 或端口硬穿透！
-
-#### 🔑 加入实验室网络操作指引
-1. 下载 Tailscale 客户端 (支持 macOS/Windows/Linux/iOS/Android)。
-2. 本网站进入**【成员模式】**，点击右上方“密钥展示”提取我们的官方邀请链接和专属一键入网 Token (AuthKey)。
-3. 在你的电脑终端执行：
-
+    contentMarkdown: ``
+  }
 ];
 
 export const DEFAULT_SERVICES: ServiceAsset[] = [
@@ -163,80 +150,11 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     localUrl: 'http://192.168.31.240:5244',
     tailscaleUrl: 'http://100.68.153.123:5244',
     status: 'online'
-  },
-  // {
-  //   id: 'srv-3',
-  //   name: 'JupyterHub 算力调试大厅',
-  //   description: '支持单点共享登录的多用户 CPU/GPU 混合调试沙箱，提供快速的代码原型构建环境。',
-  //   icon: 'Cpu',
-  //   localUrl: 'http://10.12.8.20:8000',
-  //   tailscaleUrl: 'http://jupyterhub.lab-net.ts.net',
-  //   status: 'online'
-  // },
-  // {
-  //   id: 'srv-4',
-  //   name: 'Lab Code-Server',
-  //   description: '运行在 DGX 超算节点之上的远程浏览器 IDE，支持无需配置的远程一键炼丹。',
-  //   icon: 'Code',
-  //   localUrl: 'http://10.12.8.15:8080',
-  //   tailscaleUrl: 'http://codesrv.lab-net.ts.net',
-  //   status: 'maintenance'
-  // },
-  // {
-  //   id: 'srv-5',
-  //   name: 'Harbor 镜像中央仓',
-  //   description: '托管实验室的所有容器快照，提供专用的物理节点以极速拉取并直接热启动运行。',
-  //   icon: 'Layers',
-  //   localUrl: 'http://10.12.8.2:5000',
-  //   tailscaleUrl: 'http://harbor.lab-net.ts.net',
-  //   status: 'online'
-  // }
+  }
 ];
 
 export const DEFAULT_MEMOS: MemoPost[] = [
   {
-    id: 'memo-1',
-    author: '张三峰 (大模型组研二)',
-    avatarSeed: 'zhang',
-    content: '🎉 成功跑通了 **DeepSeek-R1 蒸馏 Qwen-14B** 的本地分布式推理与 LLaMA-Factory 增量微调！在 DGX 单机双卡 4090 下达到了 **34.5 tokens/sec** 的超强吞吐。所有的量化预打包镜像 \`deepseek-distill-qwen-14b-v1.tar\` 已直接共享到了 AList 文件存储中心根目录下，环境配置方法我已同步维护进本站的【环境配置专版】，大家自取！',
-    timestamp: '2026-05-20 08:32',
-    tags: ['环境分享', 'Qwen-14B', 'DeepSeek'],
-    isPrivate: false
-  },
-  {
-    id: 'memo-2',
-    author: '李秋林 (安全方向博一)',
-    avatarSeed: 'li',
-    content: '⚠️ **【网络安全应急通知】** 兄弟们注意！下午 14:00 - 16:00 之间，请勿在本地宿主或算力端上直接使用 \`admin / admin888\` 等高危险简单弱密码。教务处网络防火墙刚刚对实验室所在网段的 A100/A800 暴露端口进行了网络端口碰撞审计，已有 2 两个节点被判定有安全溢出风险。请务必开启 Tailscale 或在内网配网后修改高强度鉴权凭据！',
-    timestamp: '2026-05-19 16:15',
-    tags: ['安全提示', '网络排爆'],
-    isPrivate: true
-  },
-  {
-    id: 'memo-3',
-    author: '王小伟 (科研值班秘书)',
-    avatarSeed: 'wang',
-    content: '📌 **机房检修周报 (物理检修)** \n主干光纤线路与 A6000 算力组备用电池(UPS)将于 **本周五上午 9:00 - 11:30** 进行耐压测试。此次检修将断开备用宿主机电源。在此期间，请跑长周期的同学务必在 SLURM 作业中加入 \`--checkpoint\` 或设置定期写盘保存，避免因为物理重启造成不可恢复的算法丢包！',
-    timestamp: '2026-05-18 10:20',
-    tags: ['官方公告', 'UPS断电'],
-    isPrivate: false
-  },
-  {
-    id: 'memo-4',
-    author: '孙教授 (实验室学术导师)',
-    avatarSeed: 'sun',
-    content: '🌟 转给各位同学：CVPR 2026 投稿论文第一阶段大修结果已经出炉，恭喜本实验室有两篇一作论文进入 R&R 面试大纲！请做视频理解与三维重建的小组成员，在明晚 (5月21日) 19:30 前往 A401 多功能报告厅开展集中答辩与盲审应对练习，欢迎研一方面的新生也来旁听学习，这对于写好第一篇科学论文极为重要。',
-    timestamp: '2026-05-18 09:00',
-    tags: ['喜报', '学术指导'],
-    isPrivate: false
-  },
-  {
-    id: 'memo-5',
-    author: '管理员 (运维总组主任)',
-    avatarSeed: 'admin',
-    content: '🔓 内部 Tailscale 配网注册使用的一键邀请链接和安全通行密钥 (\`tskey-auth-lab-2026-secure\`) 已经封装到站内的【关于本站】模块中，只有通过上方切换解锁**「成员模式」**才能直接阅读和拉取命令行。新人配网遇到任何 IP 指向冲突，可在 Memos 留言艾特我。',
-    timestamp: '2026-05-17 14:02',
-    tags: ['新手须知', 'Tailscale通行'],
-    isPrivate: true
+
   }
 ];
