@@ -10,7 +10,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     id: 'nav-1',
     title: 'LLM/VLM 训练环境一键配置',
     description: 'PyTorch + CUDA 12.4 + HuggingFace 高速国内镜像源加速环境搭建指南。',
-    linkUrl: './docs/',
+    linkUrl: '${baseUrl}docs/',
     category: '环境配置',
     isInternalOnly: false,
     contentMarkdown: `### 🚀 LLM/VLM 环境快速配置指南
@@ -49,7 +49,7 @@ print("Device Count:", torch.cuda.device_count())
     id: 'nav-2',
     title: '实验室 Docker 镜像打包及私有仓推送规范',
     description: '指导如何快速将本地训练微调模型封装为 Docker 镜像并推送至局域网 Harbor 仓。',
-    linkUrl: '#docker-guide',
+    linkUrl: '${baseUrl}docs/',
     category: '镜像打包',
     isInternalOnly: true,
     contentMarkdown: `### 🐋 实验室私有 Docker 镜像与 Harbor 推送指引
@@ -88,7 +88,7 @@ docker push 10.12.8.2:5000/models/deepseek-micro:v1.0.0
     id: 'nav-3',
     title: 'SLURM 算力集群排队预约与公平资源配额办法',
     description: '实验室共享高性能 A100/A800/A6000 算力调配政策，防止单个任务长期侵占公共资源的规范。',
-    linkUrl: './docs/vpn_guide',
+    linkUrl: '${baseUrl}docs/vpn_guide',
     category: '实验规范',
     isInternalOnly: false,
     contentMarkdown: `### 📊 SLURM 算力集群排队预约与使用配额
@@ -142,59 +142,55 @@ python run_eval.py --model_path /data/models/llama-3.1-8b/
 1. 下载 Tailscale 客户端 (支持 macOS/Windows/Linux/iOS/Android)。
 2. 本网站进入**【成员模式】**，点击右上方“密钥展示”提取我们的官方邀请链接和专属一键入网 Token (AuthKey)。
 3. 在你的电脑终端执行：
-   \`\`\`bash
-   tailscale up --authkey tskey-auth-xxxxx-xxxxxxxxxx
-   \`\`\`
-   配网指示灯变为绿色后，你便可完美访问网站上所有的本地 IP 或 \`*.ts.net\` 隐藏服务卡片！`
-  }
+
 ];
 
 export const DEFAULT_SERVICES: ServiceAsset[] = [
   {
     id: 'srv-1',
     name: 'Memos 轻速备忘流',
-    description: '实验室闪念、日常代码 Bug、科研新发现的一站式卡片式日记平台。',
+    description: '实验室闪念、日常、代码 Bug、科研发现的分享平台。',
     icon: 'StickyNote',
-    localUrl: 'http://10.12.8.5:5230',
-    tailscaleUrl: 'http://memos.lab-net.ts.net',
+    localUrl: 'http://192.168.31.240:5230',
+    tailscaleUrl: 'http://100.68.153.123:5230',
     status: 'online'
   },
   {
     id: 'srv-2',
     name: 'AList 文件存储中心',
-    description: '聚合存储 12T 实验室固态、百度网盘与阿里网盘中所有的基础预训练骨干模型和评测集。',
+    description: '服务器的归档软件仓库。目前仅支持内网下载。',
     icon: 'FolderClosed',
-    localUrl: 'http://10.12.8.10:5244',
-    tailscaleUrl: 'http://alist.lab-net.ts.net',
+    localUrl: 'http://192.168.31.240:5244',
+    tailscaleUrl: 'http://100.68.153.123:5244',
     status: 'online'
   },
-  {
-    id: 'srv-3',
-    name: 'JupyterHub 算力调试大厅',
-    description: '支持单点共享登录的多用户 CPU/GPU 混合调试沙箱，提供快速的代码原型构建环境。',
-    icon: 'Cpu',
-    localUrl: 'http://10.12.8.20:8000',
-    tailscaleUrl: 'http://jupyterhub.lab-net.ts.net',
-    status: 'online'
-  },
-  {
-    id: 'srv-4',
-    name: 'Lab Code-Server',
-    description: '运行在 DGX 超算节点之上的远程浏览器 IDE，支持无需配置的远程一键炼丹。',
-    icon: 'Code',
-    localUrl: 'http://10.12.8.15:8080',
-    tailscaleUrl: 'http://codesrv.lab-net.ts.net',
-    status: 'maintenance'
-  },
-  {
-    id: 'srv-5',
-    name: 'Harbor 镜像中央仓',
-    description: '托管实验室的所有容器快照，提供专用的物理节点以极速拉取并直接热启动运行。',
-    icon: 'Layers',
-    localUrl: 'http://10.12.8.2:5000',
-    tailscaleUrl: 'http://harbor.lab-net.ts.net',
-    status: 'online'
-  }
+  // {
+  //   id: 'srv-3',
+  //   name: 'JupyterHub 算力调试大厅',
+  //   description: '支持单点共享登录的多用户 CPU/GPU 混合调试沙箱，提供快速的代码原型构建环境。',
+  //   icon: 'Cpu',
+  //   localUrl: 'http://10.12.8.20:8000',
+  //   tailscaleUrl: 'http://jupyterhub.lab-net.ts.net',
+  //   status: 'online'
+  // },
+  // {
+  //   id: 'srv-4',
+  //   name: 'Lab Code-Server',
+  //   description: '运行在 DGX 超算节点之上的远程浏览器 IDE，支持无需配置的远程一键炼丹。',
+  //   icon: 'Code',
+  //   localUrl: 'http://10.12.8.15:8080',
+  //   tailscaleUrl: 'http://codesrv.lab-net.ts.net',
+  //   status: 'maintenance'
+  // },
+  // {
+  //   id: 'srv-5',
+  //   name: 'Harbor 镜像中央仓',
+  //   description: '托管实验室的所有容器快照，提供专用的物理节点以极速拉取并直接热启动运行。',
+  //   icon: 'Layers',
+  //   localUrl: 'http://10.12.8.2:5000',
+  //   tailscaleUrl: 'http://harbor.lab-net.ts.net',
+  //   status: 'online'
+  // }
 ];
 
 export const DEFAULT_MEMOS: MemoPost[] = [

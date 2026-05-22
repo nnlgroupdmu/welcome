@@ -41,6 +41,14 @@ import {
 import { NavItem, ServiceAsset, MemoPost } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
 
+import React from 'react';
+import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入公告
+import Navbar from './components/Navbar';
+import MainDashboard from './components/MainDashboard';
+// ...你的其他原有引入
+
+
+
 export default function App() {
   // Core Data States (Initialized from Default Data, synced with localStorage)
   const [navItems, setNavItems] = useState<NavItem[]>(() => {
@@ -215,6 +223,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans tech-grid-bg antialiased selection:bg-teal-500 selection:text-white pb-16">
       
+      <AnnouncementBanner />
+
       {/* ================================= HEADER BAR ================================= */}
       <header id="main-header" className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
