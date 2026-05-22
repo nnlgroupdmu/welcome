@@ -224,7 +224,7 @@ export default function App() {
               <Terminal className="w-4 h-4" />
             </div>
             <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-tight">
-              软件工程与大语言模型协作实验室
+              NNL Group Lab
             </h1>
           </div>
 
@@ -246,7 +246,7 @@ export default function App() {
                 id="btn-link-contact"
                 href="mailto:mistiiixv@gmail.com" 
                 className="p-2 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors cursor-pointer"
-                title="发送邮件联系实验室"
+                title="联系我们"
               >
                 <Mail className="w-5 h-5" />
               </a>
@@ -272,7 +272,7 @@ export default function App() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span>Tailscale 已联通 ({latency}ms)</span>
+                <span>Tailscale 连通 ({latency}ms)</span>
               </button>
             )}
 
@@ -281,10 +281,10 @@ export default function App() {
                 id="btn-tailscale-status-retry"
                 onClick={testTailscaleConnection}
                 className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100/50 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none"
-                title="未能自动接入虚拟网段。请配置客户端。点击重新测试。"
+                title="请配置客户端或检查 DNS 设置。点击重新测试。"
               >
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                <span>Tailscale 离线 (未配置双路)</span>
+                <span>Tailscale 连接测试失败</span>
               </button>
             )}
           </div>
@@ -301,13 +301,13 @@ export default function App() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-full px-3 py-1 text-xs text-teal-300 mb-3 font-mono">
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>实验室极速中转空间</span>
+              <span>实验室极速中转站</span>
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight mb-2">
-              研发算力中枢与知识互联雷达
+              研发资源中枢与知识共享中心
             </h2>
             <p className="text-slate-300 text-sm leading-relaxed max-w-2xl">
-              这里是软件实验室日常开发、文件存取与随手记的极速跳板。本站内置双路中转地址，使用 <strong>Tailscale 虚拟专网</strong> 即可在宿主外部或宿舍中安全秒连内网资产。
+              这里是软件实验室日常开发、文件存取与随手记的极速跳板。本站内置双路中转地址，实验室 WiFi 下可直接访问内网链接。使用 <strong>Tailscale 虚拟专网</strong> 即可在实验室外部或宿舍中安全秒连内网资产。
             </p>
           </div>
         </div>
@@ -372,7 +372,7 @@ export default function App() {
                 </span>
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">站内专区</h3>
-                  <p className="text-xs text-slate-400">一键配置、镜像打包、SLURM集群规则技术手册</p>
+                  <p className="text-xs text-slate-400">环境配置、资源使用规则和技术手册</p>
                 </div>
               </div>
             </div>
@@ -463,7 +463,7 @@ export default function App() {
                 </span>
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
-                  <p className="text-xs text-slate-400">已部署工具，点击一键跳转至物理中转页</p>
+                  <p className="text-xs text-slate-400">服务器已部署的工具集合，点击一键跳转</p>
                 </div>
               </div>
             </div>
@@ -544,7 +544,7 @@ export default function App() {
               </span>
               <div>
                 <h3 className="font-bold text-slate-900 text-base">最新 Memos 精选备忘流</h3>
-                <p className="text-xs text-slate-400">实时展示 5 条左右跑通的新模型评测及数据集发布速递</p>
+                <p className="text-xs text-slate-400">实时展示最近的发布速递</p>
               </div>
             </div>
 
@@ -555,7 +555,7 @@ export default function App() {
               rel="noopener noreferrer"
               className="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 active:scale-95 duration-100 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow text-center"
             >
-              <Send className="w-3.5 h-3.5" /> 发起备忘随手记
+              <Send className="w-3.5 h-3.5" /> 投递一条笔记
             </a>
           </div>
 
@@ -641,10 +641,10 @@ export default function App() {
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 text-center text-slate-400 text-xs">
         <div className="border-t border-slate-200 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="font-mono">
-            © 2026 软件工程与大语言模型协作实验室 (SEAL)
+            © 2026 NNL Group Lab | nnlgroupdmu
           </p>
           <div className="flex gap-4">
-            <span className="text-[11px] text-slate-400">网络架构: 局域寻址网 & Tailscale Overlay 零信任接入</span>
+            {/* <span className="text-[11px] text-slate-400">网络架构: 局域寻址网 & Tailscale Overlay 零信任接入</span> */}
             <span className="text-[11px] text-slate-400">版本: v3.2.0-STABLE</span>
           </div>
         </div>

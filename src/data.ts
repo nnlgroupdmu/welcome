@@ -10,7 +10,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     id: 'nav-1',
     title: 'LLM/VLM 训练环境一键配置',
     description: 'PyTorch + CUDA 12.4 + HuggingFace 高速国内镜像源加速环境搭建指南。',
-    linkUrl: '#env-setup',
+    linkUrl: './docs/',
     category: '环境配置',
     isInternalOnly: false,
     contentMarkdown: `### 🚀 LLM/VLM 环境快速配置指南
@@ -88,7 +88,7 @@ docker push 10.12.8.2:5000/models/deepseek-micro:v1.0.0
     id: 'nav-3',
     title: 'SLURM 算力集群排队预约与公平资源配额办法',
     description: '实验室共享高性能 A100/A800/A6000 算力调配政策，防止单个任务长期侵占公共资源的规范。',
-    linkUrl: '#norms',
+    linkUrl: './docs/vpn_guide',
     category: '实验规范',
     isInternalOnly: false,
     contentMarkdown: `### 📊 SLURM 算力集群排队预约与使用配额
