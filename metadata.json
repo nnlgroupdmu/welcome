@@ -1,0 +1,6 @@
+{
+  "name": "软件实验室门户首页",
+  "description": "面向计算机软件实验室成员日常使用的导航展现门户，兼具公网/内网隐私权限控制，整合 Memos 精选流及核心内网工具的双路直达通道。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
