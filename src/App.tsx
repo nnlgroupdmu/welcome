@@ -42,21 +42,34 @@ import { NavItem, ServiceAsset, MemoPost } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
 
 import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入公告
+import Markdown from 'react-markdown';
 
 
 export default function App() {
-  // Core Data States (Initialized from Default Data, synced with localStorage)
+  // Caching configuration: Change to true to re-enable local storage persistence
+  const ENABLE_CACHE = false;
+
+  // Core Data States (Initialized from Default Data, synced with localStorage if enabled)
   const [navItems, setNavItems] = useState<NavItem[]>(() => {
-    const cached = localStorage.getItem('seal_nav_items');
-    return cached ? JSON.parse(cached) : DEFAULT_NAV_ITEMS;
+    if (ENABLE_CACHE) {
+      const cached = localStorage.getItem('seal_nav_items');
+      if (cached) return JSON.parse(cached);
+    }
+    return DEFAULT_NAV_ITEMS;
   });
   const [services, setServices] = useState<ServiceAsset[]>(() => {
-    const cached = localStorage.getItem('seal_services');
-    return cached ? JSON.parse(cached) : DEFAULT_SERVICES;
+    if (ENABLE_CACHE) {
+      const cached = localStorage.getItem('seal_services');
+      if (cached) return JSON.parse(cached);
+    }
+    return DEFAULT_SERVICES;
   });
   const [memos, setMemos] = useState<MemoPost[]>(() => {
-    const cached = localStorage.getItem('seal_memos');
-    return cached ? JSON.parse(cached) : DEFAULT_MEMOS;
+    if (ENABLE_CACHE) {
+      const cached = localStorage.getItem('seal_memos');
+      if (cached) return JSON.parse(cached);
+    }
+    return DEFAULT_MEMOS;
   });
 
   // Client Filter & View States
@@ -73,57 +86,86 @@ export default function App() {
   const [latency, setLatency] = useState<number | null>(null);
 
   const fetchRemoteMemos = async () => {
-    try {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 2000); // 2秒超时
-      
-      const response = await fetch("http://100.68.153.123:5230/api/v1/memos", {
-        signal: controller.signal
-      });
-      clearTimeout(id);
-      
-      if (response.ok) {
-        const data = await response.json();
-        const list = Array.isArray(data) ? data : (data.memos || data.data || []);
-        if (list && list.length > 0) {
-          const mapped: MemoPost[] = list.map((item: any, idx: number) => {
-            const content = item.content || '';
-            let tags = item.tags || [];
-            if (tags.length === 0) {
-              const hashTags = content.match(/#\S+/g);
-              if (hashTags) {
-                tags = hashTags.map((t: string) => t.replace('#', ''));
-              }
-            }
-            if (tags.length === 0) {
-              tags = ['内网同步'];
-            }
-            const author = item.creatorName || item.creatorUsername || item.creator || '内网成员';
-            
-            let tsString = '';
-            if (item.createTime) {
-              tsString = item.createTime.replace('T', ' ').slice(0, 16);
-            } else if (item.createdTs) {
-              tsString = new Date(item.createdTs * 1000).toISOString().replace('T', ' ').slice(0, 16);
-            } else {
-              tsString = new Date().toISOString().replace('T', ' ').slice(0, 16);
-            }
+    // 1. 定义双路出口：第一条为 Tailscale IP，第二条为物理内网物理 IP（依据你之前提供的 Memos 端口 5230）
+    const urls = [
+      "http://100.68.153.123:5230/api/v1/memos", // Tailscale 零信任链路
+      "http://192.168.31.240:5230/api/v1/memos"  // 物理内网直连链路
+    ];
 
-            return {
-              id: `remote-${item.id || idx}`,
-              author,
-              avatarSeed: author.slice(0, 2),
-              content,
-              timestamp: tsString,
-              tags,
-              isPrivate: false
-            };
-          });
-          setMemos(mapped);
-        }
+    // 2. 封装单路请求函数，自带 2.5 秒超时控制
+    const fetchSinglePath = async (url: string) => {
+      const controller = new AbortController();
+      const timerId = setTimeout(() => controller.abort(), 2500); // 稍微宽限到 2.5 秒
+      
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timerId);
+        if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
+        return await response.json();
+      } catch (e) {
+        clearTimeout(timerId);
+        throw e; // 抛出错误以供 Promise.any 捕获
+      }
+    };
+
+    try {
+      // 3. 核心：双路竞速！哪一条链路先连上、先返回数据，就直接用谁的成果
+      const data = await Promise.any(urls.map(url => fetchSinglePath(url)));
+
+      // 4. 解析数据列表
+      const list = Array.isArray(data) ? data : (data.memos || data.data || []);
+      
+      if (list && list.length > 0) {
+        const mapped: MemoPost[] = list.map((item: any, idx: number) => {
+          const content = item.content || '';
+          
+          // 5. 极致的数据清洗，彻底封死 toLowerCase 白屏隐患
+          let rawTags = item.tags || [];
+          // 确保过滤掉 rawTags 里的所有非字符串、undefined 或空值
+          let tags: string[] = Array.isArray(rawTags) 
+            ? rawTags.filter((t: any) => typeof t === 'string' && t.trim() !== '') 
+            : [];
+
+          if (tags.length === 0) {
+            const hashTags = content.match(/#\S+/g);
+            if (hashTags) {
+              tags = hashTags.map((t: string) => t.replace('#', '').trim());
+            }
+          }
+          
+          // 再次检查，如果是空数组，塞入标准兜底标签
+          if (tags.length === 0) {
+            tags = ['内网同步'];
+          }
+
+          const author = item.creatorName || item.creatorUsername || item.creator || '内网成员';
+          
+          // 时间格式化
+          let tsString = '';
+          if (item.createTime) {
+            tsString = item.createTime.replace('T', ' ').slice(0, 16);
+          } else if (item.createdTs) {
+            tsString = new Date(item.createdTs * 1000).toISOString().replace('T', ' ').slice(0, 16);
+          } else {
+            tsString = new Date().toISOString().replace('T', ' ').slice(0, 16);
+          }
+
+          return {
+            id: `remote-${item.id || idx}`,
+            author,
+            avatarSeed: author.slice(0, 2),
+            content,
+            timestamp: tsString,
+            tags: tags, // 此时的 tags 内部全都是干净、健康的纯字符串
+            isPrivate: false
+          };
+        });
+
+        setMemos(mapped);
       }
     } catch (err) {
-      console.warn("无法从内网 Memos 系统同步数据，已使用本地或内置备忘数据进行兼容显示：", err);
+      // 只有当 urls 里面的两条路全部挂掉（或者都超时）时，才会走到这里
+      console.warn("双路网络（物理内网/Tailscale）均无法联通 Memos 系统，已自动启用内置缓存/模拟数据：", err);
     }
   };
 
@@ -155,16 +197,22 @@ export default function App() {
 
   // Sync state modifications to localStorage
   useEffect(() => {
-    localStorage.setItem('seal_nav_items', JSON.stringify(navItems));
-  }, [navItems]);
+    if (ENABLE_CACHE) {
+      localStorage.setItem('seal_nav_items', JSON.stringify(navItems));
+    }
+  }, [navItems, ENABLE_CACHE]);
 
   useEffect(() => {
-    localStorage.setItem('seal_services', JSON.stringify(services));
-  }, [services]);
+    if (ENABLE_CACHE) {
+      localStorage.setItem('seal_services', JSON.stringify(services));
+    }
+  }, [services, ENABLE_CACHE]);
 
   useEffect(() => {
-    localStorage.setItem('seal_memos', JSON.stringify(memos));
-  }, [memos]);
+    if (ENABLE_CACHE) {
+      localStorage.setItem('seal_memos', JSON.stringify(memos));
+    }
+  }, [memos, ENABLE_CACHE]);
 
   // Utility to copy text to clipboard
   const handleCopyToClipboard = (text: string, id: string) => {
@@ -197,7 +245,7 @@ export default function App() {
 
   // Filters logic
   const filteredNavItems = navItems.filter(item => {
-    const matchesCategory = activeCategory === '全部' || item.category === activeCategory;
+    const matchesCategory = activeCategory === '全部' || (item.categories && item.categories.includes(activeCategory));
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -214,6 +262,9 @@ export default function App() {
 
   // Unique tags across all memo posts
   const allMemoTags = Array.from(new Set(memos.flatMap(m => m.tags)));
+
+  // Dynamic navigation categories generated from actually defined navItems!
+  const allNavCategories = ['全部', ...Array.from(new Set(navItems.flatMap(item => item.categories || [])))];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans tech-grid-bg antialiased selection:bg-teal-500 selection:text-white pb-16">
@@ -354,10 +405,11 @@ export default function App() {
               <button 
                 id="btn-clear-tag"
                 onClick={() => setSelectedTag(null)}
-                className="text-rose-600 hover:underline hover:text-rose-700 font-semibold ml-1"
+                className="text-xs text-slate-400 hover:text-slate-600 font-medium ml-2 transition-colors cursor-pointer inline-flex items-center gap-0.5 bg-transparent border-0 p-0"
               >
-                清空过滤
-              </button>
+                <span>清除筛选</span>
+                <span className="text-sm leading-none font-bold">&times;</span>
+               </button>
             )}
           </div>
 
@@ -384,7 +436,7 @@ export default function App() {
 
             {/* Subcategories Selector */}
             <div className="flex flex-wrap gap-1.5 mb-5">
-              {['全部', '环境配置', '镜像打包', '实验规范', '关于本站'].map(tab => (
+              {allNavCategories.map(tab => (
                 <button
                   id={`btn-nav-tab-${tab}`}
                   key={tab}
@@ -415,7 +467,7 @@ export default function App() {
                     <div>
                       <div className="flex items-start justify-between mb-3">
                         <span className="p-1.5 bg-slate-50 group-hover:bg-teal-100/60 rounded-lg transition-colors">
-                          {getCategoryIcon(item.category)}
+                          {getCategoryIcon(item.categories?.[0] || '其他')}
                         </span>
                       </div>
 
@@ -427,9 +479,13 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-teal-600 pt-2 border-t border-slate-100">
-                      <span className="bg-slate-100 text-slate-600 rounded px-1.5 py-0.5">{item.category}</span>
-                      <span className="flex items-center gap-0.5 font-mono group-hover:translate-x-0.5 transition-transform">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-teal-600 pt-2 border-t border-slate-100 gap-2">
+                      <div className="flex flex-wrap gap-1">
+                        {item.categories?.map(cat => (
+                          <span key={cat} className="bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap">{cat}</span>
+                        ))}
+                      </div>
+                      <span className="flex items-center gap-0.5 font-mono group-hover:translate-x-0.5 transition-transform shrink-0">
                         阅读指南 <ChevronRight className="w-3 h-3 text-teal-500" />
                       </span>
                     </div>
@@ -548,8 +604,8 @@ export default function App() {
                 <StickyNote className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="font-bold text-slate-900 text-base">最新 Memos 精选备忘流</h3>
-                <p className="text-xs text-slate-400">实时展示最近的发布速递</p>
+                <h3 className="font-bold text-slate-900 text-base">最新 Memos 笔记精选</h3>
+                <p className="text-xs text-slate-400">最新发布速递</p>
               </div>
             </div>
 
@@ -617,8 +673,27 @@ export default function App() {
                       </div>
 
                       {/* Content text */}
-                      <div id={`memo-content-text-${memo.id}`} className="text-slate-700 text-sm whitespace-pre-wrap leading-relaxed mt-1">
-                        {memo.content}
+                      <div id={`memo-content-text-${memo.id}`} className="text-slate-700 text-sm leading-relaxed mt-1">
+                        <Markdown
+                          components={{
+                            h1: (props) => <h1 className="text-base font-bold text-slate-900 mt-2 mb-1" {...props} />,
+                            h2: (props) => <h2 className="text-sm font-bold text-slate-900 mt-2 mb-1" {...props} />,
+                            p: (props) => <p className="mb-1.5 break-all" {...props} />,
+                            ul: (props) => <ul className="list-disc pl-5 mb-1.5 space-y-0.5" {...props} />,
+                            ol: (props) => <ol className="list-decimal pl-5 mb-1.5 space-y-0.5" {...props} />,
+                            li: (props) => <li className="text-xs text-slate-600" {...props} />,
+                            code: ({node, className, children, ...props} : any) => (
+                              <code className="font-mono text-xs bg-slate-100/80 text-teal-600 px-1 py-0.5 rounded border border-slate-200/50" {...props}>
+                                {children}
+                              </code>
+                            ),
+                            strong: (props) => <strong className="font-bold text-slate-950 bg-amber-50/50 px-0.5 rounded" {...props} />,
+                            a: (props) => <a className="text-teal-600 hover:text-teal-700 underline font-medium" target="_blank" rel="noreferrer" {...props} />,
+                            blockquote: (props) => <blockquote className="border-l-4 border-slate-200 pl-3 italic my-2 text-slate-500" {...props} />
+                          }}
+                        >
+                          {memo.content}
+                        </Markdown>
                       </div>
 
                     </div>
@@ -631,7 +706,7 @@ export default function App() {
                 <StickyNote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <p className="text-sm font-bold text-slate-600">目前没有相关的实验室备忘随笔。</p>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
-                  您可以使用上方的“发起备忘随手记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
+                  您可以使用上方的“投递一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
                 </p>
               </div>
             )}

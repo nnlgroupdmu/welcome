@@ -8,9 +8,8 @@ export interface NavItem {
   title: string;
   description: string;
   linkUrl: string;
-  category: '环境配置' | '镜像打包' | '实验规范' | '关于本站' | '其他';
-  isInternalOnly: boolean;
-  contentMarkdown?: string; // Optional detailed internal doc preview
+  categories: string[]; // Supports multiple categories / tags
+  isInternalOnly: boolean
 }
 
 export interface ServiceAsset {

@@ -4,6 +4,8 @@
 
 服务器可在实验室 WiFi 局域网环境直接连接；公网环境请联系管理员获取 Tailscale 账号。
 
+主站：[NNL Group Lab](https://nnlgroupdmu.github.io/welcome/)
+
 ### 内网专区
 
 <div class="nav-container">
