@@ -269,7 +269,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans tech-grid-bg antialiased selection:bg-teal-500 selection:text-white pb-16">
       
-      <AnnouncementBanner />
+      {/* <AnnouncementBanner /> */}
 
       {/* ================================= HEADER BAR ================================= */}
       <header id="main-header" className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-xs">
@@ -290,7 +290,7 @@ export default function App() {
             <div className="flex items-center gap-1.5">
               <a 
                 id="btn-link-github"
-                href="https://github.com" 
+                href="https://github.com/nnlgroupdmu/welcome" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
@@ -298,14 +298,19 @@ export default function App() {
               >
                 <Github className="w-5 h-5" />
               </a>
-              <a 
+              <button 
                 id="btn-link-contact"
-                href="mailto:mistiiixv@gmail.com" 
-                className="p-2 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors cursor-pointer"
-                title="联系我们"
+                onClick={() => handleCopyToClipboard('mistiiixv@gmail.com', 'admin-email')}
+                className="p-2 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors cursor-pointer relative"
+                title={copiedId === 'admin-email' ? '邮箱已复制！' : '复制管理员邮箱 (mistiiixv@gmail.com)'}
               >
                 <Mail className="w-5 h-5" />
-              </a>
+                {copiedId === 'admin-email' && (
+                  <span className="absolute top-full mt-1 right-0 bg-slate-900 text-white text-[10px] py-0.5 px-1.5 rounded shadow-sm whitespace-nowrap z-50">
+                    已复制!
+                  </span>
+                )}
+              </button>
             </div>
 
             <div className="h-5 w-[1px] bg-slate-200 hidden sm:block"></div>
@@ -386,7 +391,7 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span>筛选备忘标签:</span>
+            <span>筛选 Memos 笔记标签:</span>
             {allMemoTags.map(tag => (
               <button
                 id={`btn-tag-filter-${tag}`}
@@ -407,8 +412,8 @@ export default function App() {
                 onClick={() => setSelectedTag(null)}
                 className="text-xs text-slate-400 hover:text-slate-600 font-medium ml-2 transition-colors cursor-pointer inline-flex items-center gap-0.5 bg-transparent border-0 p-0"
               >
-                <span>清除筛选</span>
                 <span className="text-sm leading-none font-bold">&times;</span>
+                <span>清除筛选</span>
                </button>
             )}
           </div>
@@ -604,8 +609,8 @@ export default function App() {
                 <StickyNote className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="font-bold text-slate-900 text-base">最新 Memos 笔记精选</h3>
-                <p className="text-xs text-slate-400">最新发布速递</p>
+                <h3 className="font-bold text-slate-900 text-base">Memos 速递</h3>
+                <p className="text-xs text-slate-400">在这里速览 Memos 笔记最新发布的内容</p>
               </div>
             </div>
 

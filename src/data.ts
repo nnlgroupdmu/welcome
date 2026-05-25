@@ -27,7 +27,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
 export const DEFAULT_SERVICES: ServiceAsset[] = [
   {
     id: 'srv-1',
-    name: 'Memos 轻速备忘流',
+    name: 'Memos 轻笔记动态广场',
     description: '实验室闪念、日常、代码 Bug、科研发现的分享平台。',
     icon: 'StickyNote',
     localUrl: 'http://192.168.31.240:5230',
