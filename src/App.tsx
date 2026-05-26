@@ -354,22 +354,49 @@ export default function App() {
       </header>
 
       {/* ================================= INTRO BANNER ================================= */}
-      <section id="welcome-banner" className="bg-slate-900 text-white relative py-12 border-b border-slate-800 overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:28px_28px]"></div>
-        <div className="absolute top-1/2 right-1/4 w-72 h-72 bg-teal-500/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2"></div>
+      <section id="welcome-banner" className="bg-slate-900 text-white relative pt-12 pb-10 border-b border-slate-800 overflow-hidden">
+        {/* 背景网格与双色渐变光晕（保留完整氛围感） */}
+        <div className="absolute inset-0 opacity-5 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+        <div className="absolute top-1/2 left-1/3 w-[500px] h-[400px] bg-gradient-to-r from-teal-500/10 to-indigo-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-full px-3 py-1 text-xs text-teal-300 mb-3 font-mono">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>实验室极速中转站</span>
+          {/* 使用 md:flex 结构，让硬核提示挂在右侧，从而释放下方的纵向空间 */}
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            
+            {/* 左侧：保留完整情感和叙事，但压缩了间距（space-y-4 改为 space-y-2.5） */}
+            <div className="max-w-3xl space-y-2.5">
+              {/* Slogan Badge */}
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-medium tracking-wide">
+                <Sparkles className="w-3.5 h-3.5 text-teal-400 animate-pulse shrink-0" />
+                <span className="font-mono">Move as we wish, shine as we are.</span>
+              </div>
+              
+              {/* 热血大标题 */}
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight text-white">
+                在这里，随心定义你的方向，<br className="hidden sm:inline" />
+                用本真照亮科研的未来。
+              </h2>
+              
+              {/* 饱满的团队寄语（不删字，保留灵感） */}
+              <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">
+                欢迎来到我们的灵感主场。这是一个为每一位团队成员打造的开源资源与共享中心。无论你在寝室还是在实验室，我们都已为你搭建好畅通无阻的技术桥梁，只为支撑你每一个不设限的奇思妙想。
+              </p>
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight mb-2">
-              研发资源中枢与知识共享中心
-            </h2>
-            <p className="text-slate-300 text-sm leading-relaxed max-w-2xl">
-              这里是软件实验室日常开发、文件存取与随手记的极速跳板。本站内置双路中转地址，实验室 WiFi 下可直接访问内网链接。使用 <strong>Tailscale 虚拟专网</strong> 即可在实验室外部或宿舍中安全秒连内网资产。
-            </p>
+
+            {/* 右侧：将硬核的技术说明“挂”起来，成为不占下方高度的独立挂件 */}
+            <div className="md:max-w-xs p-3 rounded-xl bg-slate-800/30 border border-slate-800/60 backdrop-blur-sm shrink-0 self-start md:self-end">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-400"></span>
+                </span>
+                <span className="text-[11px] font-semibold text-slate-300 tracking-wide uppercase">物理内网 / Tailscale 双路连接</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-normal">
+                连接实验室 WiFi 以加载网站的完整资源，校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-900 rounded text-[11px]">Tailscale</code> 虚拟专网以加载和使用内网资源。
+              </p>
+            </div>
+
           </div>
         </div>
       </section>
@@ -621,7 +648,7 @@ export default function App() {
               rel="noopener noreferrer"
               className="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 active:scale-95 duration-100 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow text-center"
             >
-              <Send className="w-3.5 h-3.5" /> 投递一条笔记
+              <Send className="w-3.5 h-3.5" /> 发布一条笔记
             </a>
           </div>
 
@@ -711,7 +738,7 @@ export default function App() {
                 <StickyNote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <p className="text-sm font-bold text-slate-600">目前没有相关的实验室备忘随笔。</p>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
-                  您可以使用上方的“投递一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
+                  您可以使用上方的“发布一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
                 </p>
               </div>
             )}
