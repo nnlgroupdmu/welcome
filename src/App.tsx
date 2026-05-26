@@ -373,8 +373,8 @@ export default function App() {
               
               {/* 热血大标题 */}
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight text-white">
-                在这里，随心定义你的方向，<br className="hidden sm:inline" />
-                用本真照亮科研的未来。
+                在这里，由你来定义你的方向，<br className="hidden sm:inline" />
+                用本真照亮科研生活。
               </h2>
               
               {/* 饱满的团队寄语（不删字，保留灵感） */}
