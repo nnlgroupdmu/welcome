@@ -21,6 +21,22 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/vpn_guide`,
     categories: ['关于本站'],
     isInternalOnly: false
+  },
+  {
+    id: 'nav-3',
+    title: '欢迎使用 Memos 广场',
+    description: '为了打破实验室成员之间相对孤立的实验状态，共建更加团结的小组，我们正式上线了内网动态广场（Memos）。这里不是交作业或写正式周报的死板系统，而是属于我们实验室的“技术朋友圈”与“碎片化博客”。',
+    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/memos_guide`,
+    categories: ['关于本站'],
+    isInternalOnly: false
+  },
+  {
+    id: 'nav-4',
+    title: 'Markdown 笔记指南',
+    description: 'Markdown 不仅是简单的排版语法，更是 AI 时代最完美的纯文本数据资产。我们已经在内网推行了基于 Markdown 的 Memos 广场，那么在本地端，如何高效、规范地记录笔记，就成了提升科研效率的关键。',
+    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/markdown_guide`,
+    categories: ['关于本站'],
+    isInternalOnly: false
   }
 ];
 
