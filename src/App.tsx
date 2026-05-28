@@ -763,26 +763,28 @@ export default function App() {
 
               {/* Dynamic Sliding Route Preference Switcher */}
               <div className="mb-5 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/50 relative overflow-hidden">
+                {/* Dynamic sliding indicator background */}
+                <div 
+                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out pointer-events-none z-0 ${
+                    routePreference === 'tailscale' 
+                      ? 'left-1 bg-emerald-600' 
+                      : 'left-[calc(50%+2px)] bg-indigo-600'
+                  }`}
+                />
+
                 <button
                   id="btn-toggle-route-ts"
                   type="button"
                   onClick={() => setRoutePreference('tailscale')}
-                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden ${
+                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
                     routePreference === 'tailscale'
                       ? 'text-white'
                       : 'text-slate-600 hover:text-slate-950 font-semibold'
                   }`}
                   title="默认首选：通过 Tailscale 零信任网络访问"
                 >
-                  {routePreference === 'tailscale' && (
-                    <motion.div
-                      layoutId="routePreferenceBg"
-                      className="absolute inset-0 bg-emerald-600 rounded-lg"
-                      transition={{ type: "tween", ease: "easeInOut", duration: 0.22 }}
-                    />
-                  )}
                   <span className="relative z-10 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${routePreference === 'tailscale' ? 'bg-white' : 'bg-emerald-500'}`}></span>
+                    <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${routePreference === 'tailscale' ? 'bg-white' : 'bg-emerald-500'}`}></span>
                     <span>Tailscale 专网</span>
                   </span>
                 </button>
@@ -790,22 +792,15 @@ export default function App() {
                   id="btn-toggle-route-lan"
                   type="button"
                   onClick={() => setRoutePreference('lan')}
-                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden ${
+                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
                     routePreference === 'lan'
                       ? 'text-white'
                       : 'text-slate-600 hover:text-slate-950 font-semibold'
                   }`}
                   title="实验室局域网直连测试"
                 >
-                  {routePreference === 'lan' && (
-                    <motion.div
-                      layoutId="routePreferenceBg"
-                      className="absolute inset-0 bg-indigo-600 rounded-lg"
-                      transition={{ type: "tween", ease: "easeInOut", duration: 0.22 }}
-                    />
-                  )}
                   <span className="relative z-10 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${routePreference === 'lan' ? 'bg-white' : 'bg-indigo-500'}`}></span>
+                    <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${routePreference === 'lan' ? 'bg-white' : 'bg-indigo-500'}`}></span>
                     <span>物理局域网</span>
                   </span>
                 </button>
@@ -888,7 +883,7 @@ export default function App() {
           </p>
           <div className="flex gap-4">
             {/* <span className="text-[11px] text-slate-400">网络架构: 局域寻址网 & Tailscale Overlay 零信任接入</span> */}
-            <span className="text-[11px] text-slate-400">v3.3.0-Build</span>
+            <span className="text-[11px] text-slate-400">版本: v3.3.1-Build</span>
           </div>
         </div>
       </footer>

@@ -81,14 +81,14 @@ export default function DualRouteConverter() {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <h4 className="font-bold text-slate-800 text-sm tracking-tight leading-snug">
-              双路地址智能转换卡
+              智能地址转换
             </h4>
             <span className="bg-indigo-100 text-indigo-700 font-mono text-[9px] px-1 border border-indigo-200 rounded-sm font-semibold">
               内网小助手
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">
-            自动算对端：粘贴 192物理内网 或 100远程专网 地址/端口/路径即可极速计算转换及对招。
+            粘贴含内网或专网地址的文本，智能识别后提供复制使用。
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function DualRouteConverter() {
           type="text"
           value={inputUrl}
           onChange={(e) => setInputUrl(e.target.value)}
-          placeholder="粘贴原始地址/端口/路径，默认复制 IP..."
+          placeholder="192.168.31.240 [:端口或路径等任意文本]"
           className="w-full px-3 py-1.5 pr-8 border border-slate-200 rounded-lg text-xs font-mono bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-slate-700 placeholder:text-slate-400 shadow-xs"
         />
         {inputUrl && (
@@ -136,7 +136,7 @@ export default function DualRouteConverter() {
           ) : (
             <>
               <Copy className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span className="truncate">{inputUrl ? 'Tailscale 链接' : '复制 Tailscale IP'}</span>
+              <span className="truncate">{inputUrl ? '转换 Tailscale 链接' : '原始 Tailscale IP'}</span>
             </>
           )}
         </button>
@@ -161,7 +161,7 @@ export default function DualRouteConverter() {
           ) : (
             <>
               <Copy className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span className="truncate">{inputUrl ? '物理内网链接' : '复制物理内网 IP'}</span>
+              <span className="truncate">{inputUrl ? '转换物理内网链接' : '原始物理内网 IP'}</span>
             </>
           )}
         </button>
