@@ -35,7 +35,15 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     title: 'Markdown 笔记指南',
     description: 'Markdown 不仅是简单的排版语法，更是 AI 时代最完美的纯文本数据资产。我们已经在内网推行了基于 Markdown 的 Memos 广场，那么在本地端，如何高效、规范地记录笔记，就成了提升科研效率的关键。',
     linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/markdown_guide`,
-    categories: ['关于本站'],
+    categories: ['工具使用'],
+    isInternalOnly: false
+  },
+  {
+    id: 'nav-5',
+    title: '内网 Gitea 指南',
+    description: '我们自己的局域网代码托管平台（相当于内网 GitHub）现已正式上线，我们可以利用自己的服务器统一管理代码，同时不用担心未发表的内容在 GitHub 裸奔。',
+    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/gitea_guide`,
+    categories: ['工具使用'],
     isInternalOnly: false
   }
 ];
@@ -46,8 +54,8 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     name: 'Memos 轻笔记动态广场',
     description: '实验室闪念、日常、代码 Bug、科研发现的分享平台。',
     icon: 'StickyNote',
-    localUrl: 'http://192.168.31.240:5230',
-    tailscaleUrl: 'http://100.68.153.123:5230',
+    localUrl: 'http://192.168.31.240:5230/explore',
+    tailscaleUrl: 'http://100.68.153.123:5230/explore',
     status: 'online'
   },
   {
@@ -57,6 +65,15 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     icon: 'FolderClosed',
     localUrl: 'http://192.168.31.240:5244',
     tailscaleUrl: 'http://100.68.153.123:5244',
+    status: 'online'
+  },
+  {
+    id: 'srv-3',
+    name: 'Gitea 代码托管平台',
+    description: '服务器的本地 Git 代码托管平台。',
+    icon: 'GitBranch',
+    localUrl: 'http://192.168.31.240:3000',
+    tailscaleUrl: 'http://100.68.153.123:3000',
     status: 'online'
   }
 ];

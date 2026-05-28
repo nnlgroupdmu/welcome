@@ -3,6 +3,7 @@
 * [📡 内网接入指南](vpn_guide.md)
 * [📝 Memos 广场](memos_guide.md)
 * [⬇️ Markdown 指南](markdown_guide.md)
+* [🍵 内网 Gitea 指南](gitea_guide.md)
 * [🛜 网络代理指南](network_guide.md)
 * [⌛ 显卡资源监控](https://nnlgroupdmu.grafana.net/public-dashboards/c9c3072861c34bc8bba455495c7c866b?kiosk:ignore_blank)
 * [📑 更新历史](CHANGELOG.md)

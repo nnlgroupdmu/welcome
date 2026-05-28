@@ -36,12 +36,14 @@ import {
   ArrowUpRight,
   Menu,
   Github,
-  Mail
+  Mail,
+  Wrench
 } from 'lucide-react';
 import { NavItem, ServiceAsset, MemoPost } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
 
 import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入公告
+import DualRouteConverter from './components/DualRouteConverter'; // 🌟 引入双路地址智能转换小工具
 import Markdown from 'react-markdown';
 
 
@@ -88,6 +90,9 @@ export default function App() {
   // Dynamic Physical LAN Connection Tester State
   const [lanStatus, setLanStatus] = useState<'unchecked' | 'testing' | 'connected' | 'error'>('unchecked');
   const [lanLatency, setLanLatency] = useState<number | null>(null);
+
+  // User Route Preference for internal service cards
+  const [routePreference, setRoutePreference] = useState<'tailscale' | 'lan'>('tailscale');
 
   const fetchRemoteMemos = async () => {
     // 1. 定义双路出口：第一条为 Tailscale IP，第二条为物理内网物理 IP（依据你之前提供的 Memos 端口 5230）
@@ -257,14 +262,14 @@ export default function App() {
   // Icon Matcher helper
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case '环境配置': return <Laptop className="w-5 h-5 text-teal-600" />;
+      case '环境配置': return <Laptop className="w-5 h-5 text-blue-600" />;
       case '镜像打包': return <Package className="w-5 h-5 text-indigo-600" />;
       case '实验规范': return <Code className="w-5 h-5 text-amber-600" />;
       case '关于本站': return <FileText className="w-5 h-5 text-emerald-600" />;
+      case '工具使用': return <Wrench className="w-5 h-5 text-amber-600" />;
       default: return <BookOpen className="w-5 h-5 text-slate-500" />;
     }
   };
-
   const getServiceIcon = (iconName: string) => {
     switch (iconName) {
       case 'StickyNote': return <StickyNote className="w-7 h-7 text-emerald-600" />;
@@ -376,7 +381,7 @@ export default function App() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                       </span>
-                      <span>Tailscale 已连通 ({latency}ms)</span>
+                      <span>Tailscale 已联通 ({latency}ms)</span>
                     </button>
                   );
                 }
@@ -393,7 +398,7 @@ export default function App() {
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-500"></span>
                       </span>
-                      <span>物理内网已连通 ({lanLatency}ms)</span>
+                      <span>物理内网已联通 ({lanLatency}ms)</span>
                     </button>
                   );
                 }
@@ -406,7 +411,7 @@ export default function App() {
                     title="未检测到任何连接，如果是校外请确保 Tailscale 运行；如果是校内请连接实验室 WiFi。点击重试。"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse"></span>
-                    <span>内网测试失败 (点击重试)</span>
+                    <span>网络连接未就绪 (点击重试)</span>
                   </button>
                 );
               })()}
@@ -512,303 +517,366 @@ export default function App() {
       </section>
 
       {/* ================================= MAIN SECTIONS GRID ================================= */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* ----------------- 1. 站内专区 (INTERNAL NAVIGATION) - 7 Columns ----------------- */}
-        <section id="section-internal-nav" className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col">
-          <div>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 bg-teal-50 text-teal-700 rounded-lg">
-                  <Laptop className="w-5 h-5" />
-                </span>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">站内专区</h3>
-                  <p className="text-xs text-slate-400">环境配置、资源使用规则和技术手册</p>
+        {/* ================================= 左侧栏目 (Left Columns Container) ================================= */}
+        <div className="contents lg:flex lg:flex-col lg:gap-8 lg:col-span-7">
+          
+          {/* ----------------- 1. 站内专区 (INTERNAL NAVIGATION) ----------------- */}
+          <section id="section-internal-nav" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-1 lg:order-none">
+            <div>
+              <div className="flex items-center justify-between mb-5 pb-2.5 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-1.5 bg-teal-50 text-teal-700 rounded-lg">
+                    <Laptop className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">站内专区</h3>
+                    <p className="text-xs text-slate-400">环境配置、资源使用规则和技术手册</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Subcategories Selector */}
-            <div className="flex flex-wrap gap-1.5 mb-5">
-              {allNavCategories.map(tab => (
-                <button
-                  id={`btn-nav-tab-${tab}`}
-                  key={tab}
-                  onClick={() => setActiveCategory(tab)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                    activeCategory === tab 
-                      ? 'bg-teal-600 text-white shadow-xs' 
-                      : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
+              {/* Smooth Sliding Subcategories Selector */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {allNavCategories.map(tab => {
+                  const isActive = activeCategory === tab;
+                  return (
+                    <button
+                      id={`btn-nav-tab-${tab}`}
+                      key={tab}
+                      onClick={() => setActiveCategory(tab)}
+                      className={`relative px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 overflow-hidden cursor-pointer ${
+                        isActive 
+                          ? 'text-white shadow-xs' 
+                          : 'bg-slate-100 hover:bg-slate-200/50 text-slate-600 hover:text-slate-900 font-semibold'
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeCategoryBg"
+                          className="absolute inset-0 bg-teal-600 rounded-lg"
+                          transition={{ type: "tween", ease: "easeInOut", duration: 0.22 }}
+                        />
+                      )}
+                      <span className="relative z-10">{tab}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-            {/* Radar Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredNavItems.length > 0 ? (
-                (isNavExpanded ? filteredNavItems : filteredNavItems.slice(0, 4)).map(item => (
-                  <a
-                    id={`nav-card-${item.id}`}
-                    key={item.id}
-                    href={item.linkUrl}
-                    target={item.linkUrl.startsWith('http') ? '_blank' : undefined}
-                    rel={item.linkUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
-                    className="group border border-slate-200 rounded-xl p-4 cursor-pointer bg-white hover:bg-teal-50/20 hover:border-teal-300 transition-all hover:shadow-xs flex flex-col justify-between text-left"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between mb-3">
-                        <span className="p-1.5 bg-slate-50 group-hover:bg-teal-100/60 rounded-lg transition-colors">
-                          {getCategoryIcon(item.categories?.[0] || '其他')}
+              {/* Radar Cards Grid with Soft Elevation */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredNavItems.length > 0 ? (
+                  (isNavExpanded ? filteredNavItems : filteredNavItems.slice(0, 4)).map(item => (
+                    <a
+                      id={`nav-card-${item.id}`}
+                      key={item.id}
+                      href={item.linkUrl}
+                      target={item.linkUrl.startsWith('http') ? '_blank' : undefined}
+                      rel={item.linkUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      className="group relative border border-slate-200/80 rounded-xl p-4.5 cursor-pointer bg-gradient-to-br from-white to-slate-50/40 hover:from-teal-50/10 hover:to-teal-50/30 hover:border-teal-400/60 hover:shadow-xs transition-all duration-300 flex flex-col justify-between text-left"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between mb-3.5">
+                          <span className="p-1.5 bg-slate-50 group-hover:bg-teal-100/60 rounded-lg transition-colors">
+                            {getCategoryIcon(item.categories?.[0] || '其他')}
+                          </span>
+                        </div>
+
+                        <h4 className="font-bold text-slate-800 text-sm group-hover:text-teal-950 transition-colors mb-1.5 line-clamp-1">
+                          {item.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-teal-600 pt-2 border-t border-slate-100/80 gap-2">
+                        <div className="flex flex-wrap gap-1">
+                          {item.categories?.map(cat => (
+                            <span key={cat} className="bg-slate-100 group-hover:bg-teal-50/50 text-slate-600 group-hover:text-teal-800 rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap transition-colors">{cat}</span>
+                          ))}
+                        </div>
+                        <span className="flex items-center gap-0.5 font-mono group-hover:translate-x-0.5 transition-transform shrink-0">
+                          阅读指南 <ChevronRight className="w-3 h-3 text-teal-500" />
                         </span>
                       </div>
+                    </a>
+                  ))
+                ) : (
+                  <div className="col-span-full py-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                    <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="text-xs text-slate-400">没有检索到相应的直达雷达文档</p>
+                  </div>
+                )}
+              </div>
 
-                      <h4 className="font-bold text-slate-800 text-sm group-hover:text-teal-950 transition-colors mb-1 line-clamp-1">
-                        {item.title}
-                      </h4>
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-teal-600 pt-2 border-t border-slate-100 gap-2">
-                      <div className="flex flex-wrap gap-1">
-                        {item.categories?.map(cat => (
-                          <span key={cat} className="bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap">{cat}</span>
-                        ))}
-                      </div>
-                      <span className="flex items-center gap-0.5 font-mono group-hover:translate-x-0.5 transition-transform shrink-0">
-                        阅读指南 <ChevronRight className="w-3 h-3 text-teal-500" />
-                      </span>
-                    </div>
-                  </a>
-                ))
-              ) : (
-                <div className="col-span-full py-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl">
-                  <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">没有检索到相应的直达雷达文档</p>
+              {/* Fold & Align Button Mechanism for Internal Navigation */}
+              {filteredNavItems.length > 4 && (
+                <div className="flex justify-center mt-5 pt-4 border-t border-slate-100/80">
+                  <button
+                    id="btn-toggle-nav-expand"
+                    onClick={() => setIsNavExpanded(!isNavExpanded)}
+                    className="px-4 py-1.5 bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300/80 text-teal-700 hover:text-teal-800 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+                  >
+                    {isNavExpanded ? '收起部分指南' : `展开更多指南 (还有 ${filteredNavItems.length - 4} 篇)`}
+                  </button>
                 </div>
               )}
             </div>
+          </section>
 
-            {/* Fold & Align Button Mechanism for Internal Navigation */}
-            {filteredNavItems.length > 4 && (
-              <div className="flex justify-center mt-4 pt-4 border-t border-slate-100">
-                <button
-                  id="btn-toggle-nav-expand"
-                  onClick={() => setIsNavExpanded(!isNavExpanded)}
-                  className="px-3.5 py-1.5 bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-teal-700 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all shadow-xs"
-                >
-                  {isNavExpanded ? '收起部分指南' : `展开更多指南 (还有 ${filteredNavItems.length - 4} 篇)`}
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) - 5 Columns ----------------- */}
-        <section id="section-digital-assets" className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col">
-          <div>
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
-                  <Layers className="w-5 h-5" />
+          {/* ----------------- 3. 资讯专区 (INFORMATION FEED - MEMOS) ----------------- */}
+          <section id="section-memos-feed" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-3 lg:order-none">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
+                  <StickyNote className="w-5 h-5" />
                 </span>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
-                  <p className="text-xs text-slate-400">服务器已部署的工具集合，点击一键跳转</p>
+                  <h3 className="font-bold text-slate-900 text-base">Memos 速递</h3>
+                  <p className="text-xs text-slate-400">在这里速览 Memos 笔记最新发布的内容</p>
                 </div>
               </div>
+
+              <a
+                id="btn-post-new-memo"
+                href={routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 active:scale-95 duration-100 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition shadow cursor-pointer text-center"
+              >
+                <Send className="w-3.5 h-3.5" /> 发布一条笔记
+              </a>
             </div>
 
-            {/* iOS/SaaS App Launcher Style Grid (Always uncollapsed and便捷 to access) */}
-            <div id="digital-assets-app-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-3.5">
-              {services.map(srv => {
-                return (
-                  <div 
-                    id={`service-card-${srv.id}`}
-                    key={srv.id}
-                    className="group relative border border-slate-200 bg-white hover:bg-slate-50/40 rounded-xl p-4 transition-all hover:shadow-xs flex flex-col gap-4 text-left"
-                  >
-                    <div className="flex items-start gap-3.5 min-w-0">
-                      {/* App icon frame */}
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 group-hover:scale-105 transition-transform flex items-center justify-center shrink-0">
-                        {getServiceIcon(srv.icon)}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="font-bold text-slate-800 text-sm tracking-tight leading-snug group-hover:text-teal-950 transition-colors">
-                            {srv.name}
-                          </h4>
+            {/* Memos List Stream */}
+            <div id="memos-feed-stream" className="space-y-5 w-full">
+              {filteredMemos.length > 0 ? (
+                filteredMemos.slice(0, 5).map((memo, index) => {
+                  return (
+                    <motion.div
+                      id={`memo-card-${memo.id}`}
+                      key={memo.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.04 }}
+                      className="group relative bg-gradient-to-br from-white to-slate-50/35 hover:from-white hover:to-teal-50/10 border border-slate-200/80 hover:border-teal-200/80 rounded-2xl p-4.5 sm:p-5 transition-all duration-300 hover:shadow-sm overflow-hidden flex flex-col sm:flex-row gap-4.5 items-start"
+                    >
+                      {/* Left glowing marker */}
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300" />
+                      
+                      {/* Author block */}
+                      <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-28 shrink-0 text-left sm:text-center">
+                        <div className="w-9 h-9 rounded-full bg-slate-900 text-teal-400 font-bold border border-slate-200/80 flex items-center justify-center text-sm font-mono sm:mx-auto shadow-xs">
+                          {memo.avatarSeed.toUpperCase()}
                         </div>
-                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">
-                          {srv.description}
-                        </p>
+                        
+                        <div className="text-left sm:text-center flex-1 sm:flex-initial">
+                          <h4 className="font-bold text-xs text-slate-950 line-clamp-1">{memo.author}</h4>
+                          <span className="text-[10px] text-slate-400 font-mono flex items-center justify-start sm:justify-center gap-0.5 mt-0.5">
+                            <Clock className="w-2.5 h-2.5" />
+                            {memo.timestamp}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Twin Launch Actions - layout updated to bottom row */}
-                    <div className="grid grid-cols-2 gap-2.5 w-full pt-3 border-t border-slate-100">
-                      {/* Tailscale Route Anchor */}
-                      <a
-                        id={`btn-route-ts-${srv.id}`}
-                        href={srv.tailscaleUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 rounded-lg text-emerald-700 transition shadow-xs flex items-center justify-center gap-1.5 text-xs font-semibold whitespace-nowrap"
-                        title="通过 Tailscale 连接接入服务"
-                      >
-                        <ArrowUpRight className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Tailscale</span>
-                      </a>
-
-                      {/* Local Lan Route Anchor */}
-                      <a
-                        id={`btn-route-local-${srv.id}`}
-                        href={srv.localUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 rounded-lg text-indigo-700 transition shadow-xs flex items-center justify-center gap-1.5 text-xs font-semibold whitespace-nowrap"
-                        title="通过实验室物理局域网连接"
-                      >
-                        <Home className="w-4 h-4 text-indigo-500 shrink-0" />
-                        <span>物理内网</span>
-                      </a>
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-      </main>
-
-      {/* ================================= 3. 资讯专区 (INFORMATION FEED - MEMOS) ================================= */}
-      <section id="section-memos-feed" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-2 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
-                <StickyNote className="w-5 h-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">Memos 速递</h3>
-                <p className="text-xs text-slate-400">在这里速览 Memos 笔记最新发布的内容</p>
-              </div>
-            </div>
-
-            <a
-              id="btn-post-new-memo"
-              href="http://100.68.153.123:5230"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 active:scale-95 duration-100 text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow text-center"
-            >
-              <Send className="w-3.5 h-3.5" /> 发布一条笔记
-            </a>
-          </div>
-
-          {/* Memos List Stream */}
-          <div id="memos-feed-stream" className="space-y-4 max-w-4xl mx-auto">
-            {filteredMemos.length > 0 ? (
-              filteredMemos.slice(0, 5).map((memo, index) => {
-                return (
-                  <motion.div
-                    id={`memo-card-${memo.id}`}
-                    key={memo.id}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.04 }}
-                    className="group bg-white hover:bg-teal-50/10 border border-slate-200 hover:border-teal-200 rounded-2xl p-4 sm:p-5 transition-all hover:shadow-sm relative overflow-hidden flex flex-col sm:flex-row gap-4 items-start"
-                  >
-                    
-                    {/* Author block */}
-                    <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-28 shrink-0 text-left sm:text-center">
-                      <div className="w-9 h-9 rounded-full bg-slate-900 text-teal-400 font-bold border border-slate-200 flex items-center justify-center text-sm font-mono sm:mx-auto">
-                        {memo.avatarSeed.toUpperCase()}
-                      </div>
-                      
-                      <div className="text-left sm:text-center flex-1 sm:flex-initial">
-                        <h4 className="font-bold text-xs text-slate-950 line-clamp-1">{memo.author}</h4>
-                        <span className="text-[10px] text-slate-400 font-mono flex items-center justify-start sm:justify-center gap-0.5 mt-0.5">
-                          <Clock className="w-2.5 h-2.5" />
-                          {memo.timestamp}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Memo content body */}
-                    <div className="flex-1 min-w-0 w-full">
-                      
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {memo.tags.map(tag => (
-                            <span 
-                              key={tag} 
-                              onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full cursor-pointer transition ${
-                                selectedTag === tag 
-                                  ? 'bg-teal-600 text-white font-bold' 
-                                  : 'bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-100/50'
-                              }`}
-                            >
-                              #{tag}
-                            </span>
-                          ))}
+                      {/* Memo content body */}
+                      <div className="flex-1 min-w-0 w-full">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {memo.tags.map(tag => (
+                              <span 
+                                key={tag} 
+                                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition ${
+                                  selectedTag === tag 
+                                    ? 'bg-teal-600 text-white' 
+                                    : 'bg-teal-50/60 text-teal-800 hover:bg-teal-100 border border-teal-100/50'
+                                }`}
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
                         </div>
 
-
+                        {/* Content text */}
+                        <div id={`memo-content-text-${memo.id}`} className="text-slate-700 text-sm leading-relaxed mt-1">
+                          <Markdown
+                            components={{
+                              h1: (props) => <h1 className="text-base font-bold text-slate-900 mt-3 mb-1.5" {...props} />,
+                              h2: (props) => <h2 className="text-sm font-bold text-slate-900 mt-2.5 mb-1.25" {...props} />,
+                              p: (props) => <p className="mb-2 break-all" {...props} />,
+                              ul: (props) => <ul className="list-disc pl-5 mb-2 mt-1 space-y-1.5" {...props} />,
+                              ol: (props) => <ol className="list-decimal pl-5 mb-2 mt-1 space-y-1.5" {...props} />,
+                              li: (props) => <li className="text-sm text-slate-600 pl-0.5 leading-relaxed" {...props} />,
+                              code: ({node, className, children, ...props} : any) => (
+                                <code className="font-mono text-[0.875em] bg-slate-100/80 text-teal-600 px-1.5 py-0.5 rounded border border-slate-200/40" {...props}>
+                                  {children}
+                                </code>
+                              ),
+                              strong: (props) => <strong className="font-bold text-slate-950 bg-amber-50/50 px-1 rounded" {...props} />,
+                              a: (props) => <a className="text-teal-600 hover:text-teal-700 underline font-semibold" target="_blank" rel="noreferrer" {...props} />,
+                              blockquote: (props) => <blockquote className="border-l-4 border-slate-200 pl-3 italic my-2 text-slate-500" {...props} />
+                            }}
+                          >
+                            {memo.content}
+                          </Markdown>
+                        </div>
                       </div>
-
-                      {/* Content text */}
-                      <div id={`memo-content-text-${memo.id}`} className="text-slate-700 text-sm leading-relaxed mt-1">
-                        <Markdown
-                          components={{
-                            h1: (props) => <h1 className="text-base font-bold text-slate-900 mt-2 mb-1" {...props} />,
-                            h2: (props) => <h2 className="text-sm font-bold text-slate-900 mt-2 mb-1" {...props} />,
-                            p: (props) => <p className="mb-1.5 break-all" {...props} />,
-                            ul: (props) => <ul className="list-disc pl-5 mb-1.5 space-y-0.5" {...props} />,
-                            ol: (props) => <ol className="list-decimal pl-5 mb-1.5 space-y-0.5" {...props} />,
-                            li: (props) => <li className="text-xs text-slate-600" {...props} />,
-                            code: ({node, className, children, ...props} : any) => (
-                              <code className="font-mono text-xs bg-slate-100/80 text-teal-600 px-1 py-0.5 rounded border border-slate-200/50" {...props}>
-                                {children}
-                              </code>
-                            ),
-                            strong: (props) => <strong className="font-bold text-slate-950 bg-amber-50/50 px-0.5 rounded" {...props} />,
-                            a: (props) => <a className="text-teal-600 hover:text-teal-700 underline font-medium" target="_blank" rel="noreferrer" {...props} />,
-                            blockquote: (props) => <blockquote className="border-l-4 border-slate-200 pl-3 italic my-2 text-slate-500" {...props} />
-                          }}
-                        >
-                          {memo.content}
-                        </Markdown>
-                      </div>
-
-                    </div>
-
-                  </motion.div>
-                );
-              })
-            ) : (
-              <div id="no-memos-fallback" className="py-16 text-center bg-white border border-dashed border-slate-200 rounded-2xl">
-                <StickyNote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm font-bold text-slate-600">目前没有相关的实验室备忘随笔。</p>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
-                  您可以使用上方的“发布一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
-                </p>
-              </div>
-            )}
-          </div>
+                    </motion.div>
+                  );
+                })
+              ) : (
+                <div id="no-memos-fallback" className="py-16 text-center bg-white border border-dashed border-slate-200 rounded-2xl">
+                  <StickyNote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-slate-600">目前没有相关的实验室备忘随笔。</p>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                    您可以使用上方的“发布一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
 
         </div>
-      </section>
+
+        {/* ================================= 右侧栏目 (Right Column Container) ================================= */}
+        <div className="contents lg:flex lg:flex-col lg:gap-8 lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
+          
+          {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) ----------------- */}
+          <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none">
+            <div>
+              <div className="flex items-center justify-between mb-5 pb-2.5 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
+                    <Layers className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
+                    <p className="text-xs text-slate-400">服务器已部署的工具，点击一键跳转</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Sliding Route Preference Switcher */}
+              <div className="mb-5 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/50 relative overflow-hidden">
+                <button
+                  id="btn-toggle-route-ts"
+                  type="button"
+                  onClick={() => setRoutePreference('tailscale')}
+                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden ${
+                    routePreference === 'tailscale'
+                      ? 'text-white'
+                      : 'text-slate-600 hover:text-slate-950 font-semibold'
+                  }`}
+                  title="默认首选：通过 Tailscale 零信任网络访问"
+                >
+                  {routePreference === 'tailscale' && (
+                    <motion.div
+                      layoutId="routePreferenceBg"
+                      className="absolute inset-0 bg-emerald-600 rounded-lg"
+                      transition={{ type: "tween", ease: "easeInOut", duration: 0.22 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${routePreference === 'tailscale' ? 'bg-white' : 'bg-emerald-500'}`}></span>
+                    <span>Tailscale 专网</span>
+                  </span>
+                </button>
+                <button
+                  id="btn-toggle-route-lan"
+                  type="button"
+                  onClick={() => setRoutePreference('lan')}
+                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden ${
+                    routePreference === 'lan'
+                      ? 'text-white'
+                      : 'text-slate-600 hover:text-slate-950 font-semibold'
+                  }`}
+                  title="实验室局域网直连测试"
+                >
+                  {routePreference === 'lan' && (
+                    <motion.div
+                      layoutId="routePreferenceBg"
+                      className="absolute inset-0 bg-indigo-600 rounded-lg"
+                      transition={{ type: "tween", ease: "easeInOut", duration: 0.22 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${routePreference === 'lan' ? 'bg-white' : 'bg-indigo-500'}`}></span>
+                    <span>物理局域网</span>
+                  </span>
+                </button>
+              </div>
+
+              {/* iOS/SaaS App Launcher Style Grid with Modern Shadow Lift */}
+              <div id="digital-assets-app-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
+                {services.map(srv => {
+                  const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
+                  const activeBgHover = routePreference === 'tailscale'
+                    ? 'hover:border-emerald-400/60 hover:bg-emerald-50/10 hover:shadow-emerald-100/20'
+                    : 'hover:border-indigo-400/60 hover:bg-indigo-50/10 hover:shadow-indigo-100/20';
+                  const pulseDotColor = routePreference === 'tailscale'
+                    ? 'bg-emerald-500'
+                    : 'bg-indigo-500';
+
+                  return (
+                    <a 
+                      id={`service-card-${srv.id}`}
+                      key={srv.id}
+                      href={activeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`group relative border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
+                      title={`点击快捷跳转：${activeUrl}`}
+                    >
+                      <div className="flex items-start gap-3.5 min-w-0">
+                        {/* App icon frame */}
+                        <div className="p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0">
+                          {getServiceIcon(srv.icon)}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="font-bold text-slate-800 text-xs sm:text-sm tracking-tight leading-snug group-hover:text-slate-900 transition-colors">
+                              {srv.name}
+                            </h4>
+                          </div>
+                          <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 leading-normal">
+                            {srv.description}
+                          </p>
+                          
+                          {/* Selected route destination label */}
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>
+                            <span className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]">
+                              {routePreference === 'tailscale' ? 'TS 专网 ' : '物理内网 '}: {activeUrl.replace(/^https?:\/\//i, '')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action arrow */}
+                      <div className="p-2 rounded-lg text-slate-400 group-hover:text-slate-750 bg-slate-50/60 group-hover:bg-slate-100 transition duration-150 shrink-0">
+                        <ArrowUpRight className="w-4 h-4" />
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+
+              {/* 地址转换回到内网专区底部 */}
+              <div className="mt-5 pt-4 border-t border-slate-100/80">
+                <DualRouteConverter />
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+      </main>
 
 
 
@@ -820,7 +888,7 @@ export default function App() {
           </p>
           <div className="flex gap-4">
             {/* <span className="text-[11px] text-slate-400">网络架构: 局域寻址网 & Tailscale Overlay 零信任接入</span> */}
-            <span className="text-[11px] text-slate-400">版本: v3.2.0-STABLE</span>
+            <span className="text-[11px] text-slate-400">v3.3.0-Build</span>
           </div>
         </div>
       </footer>
