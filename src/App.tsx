@@ -85,6 +85,10 @@ export default function App() {
   const [tailscaleStatus, setTailscaleStatus] = useState<'unchecked' | 'testing' | 'connected' | 'error'>('unchecked');
   const [latency, setLatency] = useState<number | null>(null);
 
+  // Dynamic Physical LAN Connection Tester State
+  const [lanStatus, setLanStatus] = useState<'unchecked' | 'testing' | 'connected' | 'error'>('unchecked');
+  const [lanLatency, setLanLatency] = useState<number | null>(null);
+
   const fetchRemoteMemos = async () => {
     // 1. 定义双路出口：第一条为 Tailscale IP，第二条为物理内网物理 IP（依据你之前提供的 Memos 端口 5230）
     const urls = [
@@ -184,15 +188,44 @@ export default function App() {
       clearTimeout(id);
       setLatency(Date.now() - startTime);
       setTailscaleStatus('connected');
-      fetchRemoteMemos();
     } catch (error) {
       clearTimeout(id);
+      setLatency(null);
       setTailscaleStatus('error');
     }
   };
 
-  useEffect(() => {
+  const testLanConnection = async () => {
+    setLanStatus('testing');
+    
+    // 以局域网 Memos 端口作为物理内网靶点
+    const targetUrl = "http://192.168.31.240:5230/";
+    
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 1200); // 1.2秒超时
+
+    const startTime = Date.now();
+    try {
+      await fetch(targetUrl, { mode: 'no-cors', signal: controller.signal });
+      clearTimeout(id);
+      setLanLatency(Date.now() - startTime);
+      setLanStatus('connected');
+    } catch (error) {
+      clearTimeout(id);
+      setLanLatency(null);
+      setLanStatus('error');
+    }
+  };
+
+  const handleRefreshAndCheck = async () => {
+    // 启动 Tailscale 连通性测试、物理局域网连通性测试 与 遥控载入 Memos 双路拉取（相互独立，绝不互相阻塞）
     testTailscaleConnection();
+    testLanConnection();
+    fetchRemoteMemos();
+  };
+
+  useEffect(() => {
+    handleRefreshAndCheck();
   }, []);
 
   // Sync state modifications to localStorage
@@ -315,39 +348,69 @@ export default function App() {
 
             <div className="h-5 w-[1px] bg-slate-200 hidden sm:block"></div>
 
-            {tailscaleStatus === 'testing' && (
-              <div className="px-3 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 select-none animate-pulse">
-                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                <span>正在诊断隧道...</span>
-              </div>
-            )}
+            <div className="flex items-center">
+              {/* 统一单路网络状态显示按钮 */}
+              {(() => {
+                const isTesting = tailscaleStatus === 'testing' || lanStatus === 'testing';
+                const isTailscaleConnected = tailscaleStatus === 'connected';
+                const isLanConnected = lanStatus === 'connected';
 
-            {tailscaleStatus === 'connected' && (
-              <button 
-                id="btn-tailscale-status-connected"
-                onClick={testTailscaleConnection}
-                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none"
-                title="已连接虚拟专网。点击可重测状态。"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span>Tailscale 连通 ({latency}ms)</span>
-              </button>
-            )}
+                if (isTesting) {
+                  return (
+                    <div className="px-2.5 py-1 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 select-none animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                      <span>正在诊断网络...</span>
+                    </div>
+                  );
+                }
 
-            {(tailscaleStatus === 'error' || tailscaleStatus === 'unchecked') && (
-              <button 
-                id="btn-tailscale-status-retry"
-                onClick={testTailscaleConnection}
-                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100/50 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none"
-                title="请配置客户端或检查 DNS 设置。点击重新测试。"
-              >
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                <span>Tailscale 连接测试失败</span>
-              </button>
-            )}
+                if (isTailscaleConnected) {
+                  return (
+                    <button 
+                      id="btn-network-status"
+                      onClick={handleRefreshAndCheck}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
+                      title="已连接 Tailscale 零信任链路。点击重新探测或刷新。"
+                    >
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                      </span>
+                      <span>Tailscale 已连通 ({latency}ms)</span>
+                    </button>
+                  );
+                }
+
+                if (isLanConnected) {
+                  return (
+                    <button 
+                      id="btn-network-status"
+                      onClick={handleRefreshAndCheck}
+                      className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
+                      title="已直连物理局域网。点击重新探测或刷新。"
+                    >
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-500"></span>
+                      </span>
+                      <span>物理内网已连通 ({lanLatency}ms)</span>
+                    </button>
+                  );
+                }
+
+                return (
+                  <button 
+                    id="btn-network-status"
+                    onClick={handleRefreshAndCheck}
+                    className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100/60 text-slate-400 border border-slate-200/70 rounded-lg text-xs font-normal flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
+                    title="未检测到任何连接，如果是校外请确保 Tailscale 运行；如果是校内请连接实验室 WiFi。点击重试。"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse"></span>
+                    <span>内网测试失败 (点击重试)</span>
+                  </button>
+                );
+              })()}
+            </div>
           </div>
 
         </div>
