@@ -887,7 +887,7 @@ export default function App() {
           </p>
           <div className="flex gap-4">
             {/* <span className="text-[11px] text-slate-400">网络架构: 局域寻址网 & Tailscale Overlay 零信任接入</span> */}
-            <span className="text-[11px] text-slate-400">版本: v3.3.1-Build</span>
+            <span className="text-[11px] text-slate-400">版本: v3.3.2-Build</span>
           </div>
         </div>
       </footer>

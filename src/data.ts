@@ -74,8 +74,8 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     name: 'Gitea 代码托管平台',
     description: '服务器的本地 Git 代码托管平台。',
     icon: 'GitBranch',
-    localUrl: 'http://192.168.31.240:3000',
-    tailscaleUrl: 'http://100.68.153.123:3000',
+    localUrl: 'http://100.68.153.123:3000/explore/repos',
+    tailscaleUrl: 'http://100.68.153.123:3000/explore/repos',
     status: 'online'
   },
   {
