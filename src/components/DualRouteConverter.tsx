@@ -88,7 +88,7 @@ export default function DualRouteConverter() {
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">
-            粘贴含内网或专网地址的文本，智能识别后提供复制使用。
+            粘贴 192 内网或 100 专网地址，智能识别后即可复制。
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function DualRouteConverter() {
           type="text"
           value={inputUrl}
           onChange={(e) => setInputUrl(e.target.value)}
-          placeholder="192.168.31.240 [:端口或路径等任意文本]"
+          placeholder="192.168.31.240[:端口或路径等]"
           className="w-full px-3 py-1.5 pr-8 border border-slate-200 rounded-lg text-xs font-mono bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-slate-700 placeholder:text-slate-400 shadow-xs"
         />
         {inputUrl && (

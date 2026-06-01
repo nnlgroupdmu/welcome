@@ -37,7 +37,9 @@ import {
   Menu,
   Github,
   Mail,
-  Wrench
+  Wrench,
+  GitBranch,
+  Gauge
 } from 'lucide-react';
 import { NavItem, ServiceAsset, MemoPost } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
@@ -277,6 +279,8 @@ export default function App() {
       case 'Cpu': return <Cpu className="w-7 h-7 text-amber-600" />;
       case 'Code': return <Code className="w-7 h-7 text-indigo-600" />;
       case 'Layers': return <Layers className="w-7 h-7 text-purple-600" />;
+      case 'GitBranch': return <GitBranch className="w-7 h-7 text-rose-600" />;
+      case 'Gauge': return <Gauge className="w-7 h-7 text-yellow-500" />;
       default: return <Activity className="w-7 h-7 text-teal-600" />;
     }
   };

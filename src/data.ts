@@ -5,12 +5,14 @@
 
 import { NavItem, ServiceAsset, MemoPost } from './types';
 
+const baseUrl = (import.meta as any).env?.BASE_URL || '/';
+
 export const DEFAULT_NAV_ITEMS: NavItem[] = [
   {
     id: 'nav-1',
     title: '服务器指南：远程开发环境配置',
     description: '欢迎使用实验室最新双卡 NVIDIA RTX 5090D v2 (24GB) GPU 服务器。本服务器专为高性能深度学习任务设计，面向多数同学的日常科研需求，为了确保资源的高效利用与环境的稳定隔离，请遵循我们的工作流程。',
-    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/server_guide`,
+    linkUrl: `${baseUrl}docs/index.html#/server_guide`,
     categories: ['环境配置','实验规范'],
     isInternalOnly: false
   },
@@ -18,7 +20,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     id: 'nav-2',
     title: '内网接入指南',
     description: '以 5090 服务器为核心，实验室内网已部署多项网络服务。同学们需要接入我们的 Tailscale 远程组网，才能在实验室 WiFi 环境之外访问内网。建议每位同学都接入使用，按照提示步骤配置。',
-    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/vpn_guide`,
+    linkUrl: `${baseUrl}docs/index.html#/vpn_guide`,
     categories: ['关于本站'],
     isInternalOnly: false
   },
@@ -26,7 +28,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     id: 'nav-3',
     title: '欢迎使用 Memos 广场',
     description: '为了打破实验室成员之间相对孤立的实验状态，共建更加团结的小组，我们正式上线了内网动态广场（Memos）。这里不是交作业或写正式周报的死板系统，而是属于我们实验室的“技术朋友圈”与“碎片化博客”。',
-    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/memos_guide`,
+    linkUrl: `${baseUrl}docs/index.html#/memos_guide`,
     categories: ['关于本站'],
     isInternalOnly: false
   },
@@ -34,7 +36,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     id: 'nav-4',
     title: 'Markdown 笔记指南',
     description: 'Markdown 不仅是简单的排版语法，更是 AI 时代最完美的纯文本数据资产。我们已经在内网推行了基于 Markdown 的 Memos 广场，那么在本地端，如何高效、规范地记录笔记，就成了提升科研效率的关键。',
-    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/markdown_guide`,
+    linkUrl: `${baseUrl}docs/index.html#/markdown_guide`,
     categories: ['工具使用'],
     isInternalOnly: false
   },
@@ -42,7 +44,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
     id: 'nav-5',
     title: '内网 Gitea 指南',
     description: '我们自己的局域网代码托管平台（相当于内网 GitHub）现已正式上线，我们可以利用自己的服务器统一管理代码，同时不用担心未发表的内容在 GitHub 裸奔。',
-    linkUrl: `${import.meta.env.BASE_URL}docs/index.html#/gitea_guide`,
+    linkUrl: `${baseUrl}docs/index.html#/gitea_guide`,
     categories: ['工具使用'],
     isInternalOnly: false
   }
@@ -74,6 +76,15 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     icon: 'GitBranch',
     localUrl: 'http://192.168.31.240:3000',
     tailscaleUrl: 'http://100.68.153.123:3000',
+    status: 'online'
+  },
+  {
+    id: 'srv-4',
+    name: 'Grafana 显卡监控大屏',
+    description: '服务器的显卡资源实时监控。',
+    icon: 'Gauge',
+    localUrl: 'http://192.168.31.240:3999/d/adfcnh6/nvidia-dcgm-exporter?orgId=1&from=now-3h&to=now&timezone=browser&var-instance=localhost:9400&var-gpu=$__all&refresh=5s',
+    tailscaleUrl: 'http://100.68.153.123:3999/d/adfcnh6/nvidia-dcgm-exporter?orgId=1&from=now-3h&to=now&timezone=browser&var-instance=localhost:9400&var-gpu=$__all&refresh=5s',
     status: 'online'
   }
 ];
