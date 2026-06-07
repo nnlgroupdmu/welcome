@@ -24,7 +24,9 @@
 & "C:\Program Files\Tailscale\tailscale.exe" up --authkey <密钥> --hostname user-laptop
 ```
 
-*注：如果你的 Tailscale 安装位置不同请注意修改；使用 CMD 请去掉前面的* `& `。
+*注：如果你的 Tailscale 安装位置不同请注意修改；使用 CMD 请去掉前面的* `& `。*
+
+如果提示输入 `--shields_up`，在命令后面加上即可。
 
 运行后如果没有报错，说明你的电脑已经成功挂载到虚拟网络中。
 
@@ -38,11 +40,13 @@ tailscale up --authkey <密钥> --hostname user-laptop
 
 1. 运行完上述命令后，在终端输入 `tailscale ip -4`（或者右键点击右下角 Tailscale 图标），查看并记录你的设备名、分配给你的 **100.X.X.X** 开头的虚拟 IP。
     
-2. 公开入网期间打开群里的在线统计表格：👉 [【腾讯文档】Tailscale 设备注册](https://docs.qq.com/form/page/DUGpaRGdVYWx2Tmdz)，登记你的：`姓名`、`设备类型`、`Tailscale IP`。补录可以私信管理员。
+2. 公开入网期间打开群里的在线统计表格：👉 【腾讯文档】Tailscale 设备注册，登记你的：`姓名`、`设备类型`、`Tailscale IP`。补录可以私信管理员。
 
 ---
 
 ### ⚠️ 常见问题说明
+
+- **怎么退出Tailscale？** 答：Windows端在右下角状态栏找 Tailscale 小图标，右键后取消顶部的 Connected 使其变成 Not connected 断开连接，或右键后直接点 Exit 退出。不要点 Log out 退出登录！退出登录相当于主动注销，需要重新获取 Key！
 
 - **为什么我运行完命令后，还是连不上实验室服务器？** 答：为了安全，新加入的设备默认处于隔离状态。管理员会在每天晚上统一核对大家填写的【在线表格】与【后台设备列表】。只要**姓名和 IP 对得上号**，管理员就会为你发放通行证（打标签）。发放后你会自动通网。
     

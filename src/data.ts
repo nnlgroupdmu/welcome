@@ -63,7 +63,7 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
   {
     id: 'srv-2',
     name: 'AList 文件存储中心',
-    description: '服务器的归档软件仓库。目前仅支持内网下载。',
+    description: '服务器的共享存储空间。支持内网上传和下载。',
     icon: 'FolderClosed',
     localUrl: 'http://192.168.31.240:5244',
     tailscaleUrl: 'http://100.68.153.123:5244',
