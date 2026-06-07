@@ -184,15 +184,21 @@ export default function App() {
     setTailscaleStatus('testing');
     
     // 找一个绝对存在的内网服务作为靶点（例如你的 Memos 或 AList 节点）
-    const targetUrl = "https://yf5090.tail51c3b9.ts.net:8443/"; 
-    
+    const targets = [
+      "http://100.68.153.123:5230/",   // Tailscale Memos 端口
+      "http://100.68.153.123:3000/",   // Tailscale Gitea 端口
+      "http://100.68.153.123:5244/"    // Tailscale AList 端口
+    ];
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 1500); // 1.5秒超时
+    const id = setTimeout(() => controller.abort(), 2000); // 2.0秒超时保障在不稳定远程链路下的成功率
 
+    const fetchTest = async (url: string) => {
+      await fetch(url, { mode: 'no-cors', signal: controller.signal });
+      return url;
+    };
     const startTime = Date.now();
     try {
-      await fetch(targetUrl, { mode: 'no-cors', signal: controller.signal });
-      clearTimeout(id);
+      await Promise.any(targets.map(url => fetchTest(url)));
       setLatency(Date.now() - startTime);
       setTailscaleStatus('connected');
     } catch (error) {
