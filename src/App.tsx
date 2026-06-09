@@ -550,7 +550,7 @@ export default function App() {
       </section>
 
       {/* ================================= MAIN SECTIONS GRID ================================= */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* ================================= 左侧栏目 (Left Columns Container) ================================= */}
         <div className="contents lg:flex lg:flex-col lg:gap-8 lg:col-span-7">
@@ -777,131 +777,135 @@ export default function App() {
         </div>
 
         {/* ================================= 右侧栏目 (Right Column Container) ================================= */}
-        <div className="contents lg:flex lg:flex-col lg:gap-8 lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
+        <div className="w-full lg:col-span-5 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col">
           
-          {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) ----------------- */}
-          <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none">
-            <div>
-              <div className="flex items-center justify-between mb-5 pb-2.5 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
-                    <Layers className="w-5 h-5" />
-                  </span>
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
-                    <p className="text-xs text-slate-400">服务器已部署的工具，点击一键跳转</p>
+          {/* 内部滚动壳：负责在高度不够时提供滚动，pr-2 为右侧滚动条留出空隙防止挤压内容 */}
+          <div className="w-full h-full lg:overflow-y-auto lg:pr-2 flex flex-col lg:gap-8 scrollbar-container">
+            
+            {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) ----------------- */}
+            <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none shrink-0">
+              <div>
+                <div className="flex items-center justify-between mb-5 pb-2.5 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
+                      <Layers className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
+                      <p className="text-xs text-slate-400">服务器已部署的工具，点击一键跳转</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Dynamic Sliding Route Preference Switcher */}
-              <div className="mb-5 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/50 relative overflow-hidden">
-                {/* Dynamic sliding indicator background */}
-                <div 
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out pointer-events-none z-0 ${
-                    routePreference === 'tailscale' 
-                      ? 'left-1 bg-emerald-600' 
-                      : 'left-[calc(50%+2px)] bg-indigo-600'
-                  }`}
-                />
+                {/* Dynamic Sliding Route Preference Switcher */}
+                <div className="mb-5 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/50 relative overflow-hidden">
+                  {/* Dynamic sliding indicator background */}
+                  <div 
+                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out pointer-events-none z-0 ${
+                      routePreference === 'tailscale' 
+                        ? 'left-1 bg-emerald-600' 
+                        : 'left-[calc(50%+2px)] bg-indigo-600'
+                    }`}
+                  />
 
-                <button
-                  id="btn-toggle-route-ts"
-                  type="button"
-                  onClick={() => setRoutePreference('tailscale')}
-                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
-                    routePreference === 'tailscale'
-                      ? 'text-white'
-                      : 'text-slate-600 hover:text-slate-950 font-semibold'
-                  }`}
-                  title="默认首选：通过 Tailscale 零信任网络访问"
-                >
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${routePreference === 'tailscale' ? 'bg-white' : 'bg-emerald-500'}`}></span>
-                    <span>Tailscale 专网</span>
-                  </span>
-                </button>
-                <button
-                  id="btn-toggle-route-lan"
-                  type="button"
-                  onClick={() => setRoutePreference('lan')}
-                  className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
-                    routePreference === 'lan'
-                      ? 'text-white'
-                      : 'text-slate-600 hover:text-slate-950 font-semibold'
-                  }`}
-                  title="实验室局域网直连测试"
-                >
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${routePreference === 'lan' ? 'bg-white' : 'bg-indigo-500'}`}></span>
-                    <span>物理局域网</span>
-                  </span>
-                </button>
-              </div>
+                  <button
+                    id="btn-toggle-route-ts"
+                    type="button"
+                    onClick={() => setRoutePreference('tailscale')}
+                    className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
+                      routePreference === 'tailscale'
+                        ? 'text-white'
+                        : 'text-slate-600 hover:text-slate-950 font-semibold'
+                    }`}
+                    title="默认首选：通过 Tailscale 零信任网络访问"
+                  >
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${routePreference === 'tailscale' ? 'bg-white' : 'bg-emerald-500'}`}></span>
+                      <span>Tailscale 专网</span>
+                    </span>
+                  </button>
+                  <button
+                    id="btn-toggle-route-lan"
+                    type="button"
+                    onClick={() => setRoutePreference('lan')}
+                    className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
+                      routePreference === 'lan'
+                        ? 'text-white'
+                        : 'text-slate-600 hover:text-slate-950 font-semibold'
+                    }`}
+                    title="实验室局域网直连测试"
+                  >
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${routePreference === 'lan' ? 'bg-white' : 'bg-indigo-500'}`}></span>
+                      <span>物理局域网</span>
+                    </span>
+                  </button>
+                </div>
 
-              {/* iOS/SaaS App Launcher Style Grid with Modern Shadow Lift */}
-              <div id="digital-assets-app-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
-                {services.map(srv => {
-                  const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
-                  const activeBgHover = routePreference === 'tailscale'
-                    ? 'hover:border-emerald-400/60 hover:bg-emerald-50/10 hover:shadow-emerald-100/20'
-                    : 'hover:border-indigo-400/60 hover:bg-indigo-50/10 hover:shadow-indigo-100/20';
-                  const pulseDotColor = routePreference === 'tailscale'
-                    ? 'bg-emerald-500'
-                    : 'bg-indigo-500';
+                {/* iOS/SaaS App Launcher Style Grid with Modern Shadow Lift */}
+                <div id="digital-assets-app-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
+                  {services.map(srv => {
+                    const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
+                    const activeBgHover = routePreference === 'tailscale'
+                      ? 'hover:border-emerald-400/60 hover:bg-emerald-50/10 hover:shadow-emerald-100/20'
+                      : 'hover:border-indigo-400/60 hover:bg-indigo-50/10 hover:shadow-indigo-100/20';
+                    const pulseDotColor = routePreference === 'tailscale'
+                      ? 'bg-emerald-500'
+                      : 'bg-indigo-500';
 
-                  return (
-                    <a 
-                      id={`service-card-${srv.id}`}
-                      key={srv.id}
-                      href={activeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`group relative border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
-                      title={`点击快捷跳转：${activeUrl}`}
-                    >
-                      <div className="flex items-start gap-3.5 min-w-0">
-                        {/* App icon frame */}
-                        <div className="p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0">
-                          {getServiceIcon(srv.icon)}
+                    return (
+                      <a 
+                        id={`service-card-${srv.id}`}
+                        key={srv.id}
+                        href={activeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`group relative border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
+                        title={`点击快捷跳转：${activeUrl}`}
+                      >
+                        <div className="flex items-start gap-3.5 min-w-0">
+                          {/* App icon frame */}
+                          <div className="p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0">
+                            {getServiceIcon(srv.icon)}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="font-bold text-slate-800 text-xs sm:text-sm tracking-tight leading-snug group-hover:text-slate-900 transition-colors">
+                                {srv.name}
+                              </h4>
+                            </div>
+                            <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 leading-normal">
+                              {srv.description}
+                            </p>
+                            
+                            {/* Selected route destination label */}
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>
+                              <span className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]">
+                                {routePreference === 'tailscale' ? 'TS 专网 ' : '物理内网 '}: {activeUrl.replace(/^https?:\/\//i, '')}
+                              </span>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="font-bold text-slate-800 text-xs sm:text-sm tracking-tight leading-snug group-hover:text-slate-900 transition-colors">
-                              {srv.name}
-                            </h4>
-                          </div>
-                          <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 leading-normal">
-                            {srv.description}
-                          </p>
-                          
-                          {/* Selected route destination label */}
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>
-                            <span className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]">
-                              {routePreference === 'tailscale' ? 'TS 专网 ' : '物理内网 '}: {activeUrl.replace(/^https?:\/\//i, '')}
-                            </span>
-                          </div>
+                        {/* Action arrow */}
+                        <div className="p-2 rounded-lg text-slate-400 group-hover:text-slate-750 bg-slate-50/60 group-hover:bg-slate-100 transition duration-150 shrink-0">
+                          <ArrowUpRight className="w-4 h-4" />
                         </div>
-                      </div>
+                      </a>
+                    );
+                  })}
+                </div>
 
-                      {/* Action arrow */}
-                      <div className="p-2 rounded-lg text-slate-400 group-hover:text-slate-750 bg-slate-50/60 group-hover:bg-slate-100 transition duration-150 shrink-0">
-                        <ArrowUpRight className="w-4 h-4" />
-                      </div>
-                    </a>
-                  );
-                })}
+                {/* 地址转换回到内网专区底部 */}
+                <div className="mt-5 pt-4 border-t border-slate-100/80">
+                  <DualRouteConverter />
+                </div>
               </div>
+            </section>
 
-              {/* 地址转换回到内网专区底部 */}
-              <div className="mt-5 pt-4 border-t border-slate-100/80">
-                <DualRouteConverter />
-              </div>
-            </div>
-          </section>
-
+          </div>
         </div>
 
       </main>
