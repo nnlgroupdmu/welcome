@@ -39,7 +39,8 @@ import {
   Mail,
   Wrench,
   GitBranch,
-  Gauge
+  Gauge,
+  ArrowUp
 } from 'lucide-react';
 import { NavItem, ServiceAsset, MemoPost } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
@@ -95,6 +96,28 @@ export default function App() {
 
   // User Route Preference for internal service cards
   const [routePreference, setRoutePreference] = useState<'tailscale' | 'lan'>('tailscale');
+
+  // Back to Top button visibility state and scroll handler
+  const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   const fetchRemoteMemos = async () => {
     // 1. 定义双路出口：第一条为 Tailscale IP，第二条为物理内网物理 IP（依据你之前提供的 Memos 端口 5230）
@@ -897,6 +920,25 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* ================================= RETURN TO TOP ================================= */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            id="btn-back-to-top"
+            onClick={scrollToTop}
+            initial={{ opacity: 0, scale: 0.8, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 15 }}
+            whileHover={{ scale: 1.1, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-50 p-3.5 bg-teal-600 hover:bg-teal-500 text-white rounded-full shadow-lg hover:shadow-teal-650/20 hover:shadow-xl transition-all duration-300 group cursor-pointer border border-teal-500/30 flex items-center justify-center focus:outline-none"
+            title="返回顶部"
+          >
+            <ArrowUp className="w-5 h-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
     </div>
   );
