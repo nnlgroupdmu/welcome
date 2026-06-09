@@ -172,8 +172,19 @@ export default function App() {
             tags = ['内网同步'];
           }
 
-          const author = item.creatorName || item.creatorUsername || item.creator || '内网成员';
+          // 1. 获取原始用户名
+          let rawAuthor = item.creatorName || item.creatorUsername || item.creator || '内网成员';
           
+          // 2. 简化用户名：如果是 users/NAME，替换为 u/NAME
+          if (rawAuthor.startsWith('users/')) {
+            rawAuthor = rawAuthor.replace('users/', 'u/');
+          }
+
+          // 3. 动态获取 Memos 提供的头像路径 (适配 Memos v1 API 常见结构)
+          // Memos 通常把头像存在 item.avatarUrl 或 item.creator?.avatarUrl 中
+          const avatarUrl = item.avatarUrl || (item.creator && item.creator.avatarUrl) || '';
+
+
           // 时间格式化
           let tsString = '';
           if (item.createTime) {
@@ -186,11 +197,12 @@ export default function App() {
 
           return {
             id: `remote-${item.id || idx}`,
-            author,
-            avatarSeed: author.slice(0, 2),
+            author: rawAuthor,                          // 已经是简化后的 u/NAME
+            avatarUrl: avatarUrl,                       // 新增字段：传给前端渲染真实头像
+            avatarSeed: rawAuthor.replace('u/', '').slice(0, 2), // 如果没头像，用去掉 u/ 后的名字前两位做文字兜底
             content,
             timestamp: tsString,
-            tags: tags, // 此时的 tags 内部全都是干净、健康的纯字符串
+            tags: tags,
             isPrivate: false
           };
         });
@@ -702,12 +714,31 @@ export default function App() {
                       
                       {/* Author block */}
                       <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-28 shrink-0 text-left sm:text-center">
-                        <div className="w-9 h-9 rounded-full bg-slate-900 text-teal-400 font-bold border border-slate-200/80 flex items-center justify-center text-sm font-mono sm:mx-auto shadow-xs">
-                          {memo.avatarSeed.toUpperCase()}
-                        </div>
+                        {/* 判断是否有 Memos 的真实头像，如果有就用 <img>，没有或者加载失败就自动退回到文字头像 */}
+                        {memo.avatarUrl ? (
+                          <img 
+                            src={
+                              // 自动适配双路网络环境：如果头像地址是相对路径（如 /assets/...），补全为当前正确的内网网关
+                              memo.avatarUrl.startsWith('http') 
+                                ? memo.avatarUrl 
+                                : `${routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}${memo.avatarUrl}`
+                            }
+                            alt={memo.author}
+                            onError={(e) => {
+                              // 防止图片挂掉导致白屏，挂掉时隐藏图片并显示文字兜底（可选）
+                              e.currentTarget.style.display = 'none';
+                            }}
+                            className="w-9 h-9 rounded-full object-cover border border-slate-200/80 sm:mx-auto shadow-xs"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-slate-900 text-teal-400 font-bold border border-slate-200/80 flex items-center justify-center text-sm font-mono sm:mx-auto shadow-xs">
+                            {memo.avatarSeed.toUpperCase()}
+                          </div>
+                        )}
                         
                         <div className="text-left sm:text-center flex-1 sm:flex-initial">
-                          <h4 className="font-bold text-xs text-slate-950 line-clamp-1">{memo.author}</h4>
+                          {/* 此时渲染出来的已经是 u/NAME 了 */}
+                          <h4 className="font-bold text-xs text-slate-950 line-clamp-1">{memo.author}</h4> 
                           <span className="text-[10px] text-slate-400 font-mono flex items-center justify-start sm:justify-center gap-0.5 mt-0.5">
                             <Clock className="w-2.5 h-2.5" />
                             {memo.timestamp}

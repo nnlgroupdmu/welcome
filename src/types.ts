@@ -26,6 +26,7 @@ export interface MemoPost {
   id: string;
   author: string;
   avatarSeed: string; // for dynamic avatar generation
+  avatarUrl?: string; // 新增：Memos 系统提供的真实头像图片 URL（可选）
   content: string;
   timestamp: string;
   tags: string[];
