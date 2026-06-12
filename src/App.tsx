@@ -30,6 +30,8 @@ import {
   Package,
   FileText,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Send,
   Trash2,
   PlusCircle,
@@ -47,6 +49,7 @@ import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
 
 import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入公告
 import DualRouteConverter from './components/DualRouteConverter'; // 🌟 引入双路地址智能转换小工具
+import MemoContent from './components/MemoContent'; // 🌟 引入自适应内容折叠与高精测量组件
 import Markdown from 'react-markdown';
 
 
@@ -623,8 +626,8 @@ export default function App() {
                       id={`nav-card-${item.id}`}
                       key={item.id}
                       href={item.linkUrl}
-                      target={item.linkUrl.startsWith('http') ? '_blank' : undefined}
-                      rel={item.linkUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="group relative border border-slate-200/80 rounded-xl p-4.5 cursor-pointer bg-gradient-to-br from-white to-slate-50/40 hover:from-teal-50/10 hover:to-teal-50/30 hover:border-teal-400/60 hover:shadow-xs transition-all duration-300 flex flex-col justify-between text-left"
                     >
                       <div>
@@ -788,29 +791,8 @@ export default function App() {
                           </a>
                         </div>
 
-                        {/* Content text */}
-                        <div id={`memo-content-text-${memo.id}`} className="text-slate-700 text-sm leading-relaxed mt-1">
-                          <Markdown
-                            components={{
-                              h1: (props) => <h1 className="text-base font-bold text-slate-900 mt-3 mb-1.5" {...props} />,
-                              h2: (props) => <h2 className="text-sm font-bold text-slate-900 mt-2.5 mb-1.25" {...props} />,
-                              p: (props) => <p className="mb-2 break-all" {...props} />,
-                              ul: (props) => <ul className="list-disc pl-5 mb-2 mt-1 space-y-1.5" {...props} />,
-                              ol: (props) => <ol className="list-decimal pl-5 mb-2 mt-1 space-y-1.5" {...props} />,
-                              li: (props) => <li className="text-sm text-slate-600 pl-0.5 leading-relaxed" {...props} />,
-                              code: ({ node, className, children, ...props }: any) => (
-                                <code className="font-mono text-[0.875em] bg-slate-100/80 text-teal-600 px-1.5 py-0.5 rounded border border-slate-200/40" {...props}>
-                                  {children}
-                                </code>
-                              ),
-                              strong: (props) => <strong className="font-bold text-slate-950 bg-amber-50/50 px-1 rounded" {...props} />,
-                              a: (props) => <a className="text-teal-600 hover:text-teal-700 underline font-semibold" target="_blank" rel="noreferrer" {...props} />,
-                              blockquote: (props) => <blockquote className="border-l-4 border-slate-200 pl-3 italic my-2 text-slate-500" {...props} />
-                            }}
-                          >
-                            {memo.content}
-                          </Markdown>
-                        </div>
+                        {/* Content text with toggleable height limit for long memos */}
+                        <MemoContent content={memo.content} memoId={memo.id} />
                       </div>
                     </motion.div>
                   );
