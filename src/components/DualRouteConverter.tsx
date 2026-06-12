@@ -81,14 +81,14 @@ export default function DualRouteConverter() {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <h4 className="font-bold text-slate-800 text-sm tracking-tight leading-snug">
-              智能地址转换
+              双路地址智能转换
             </h4>
             <span className="bg-indigo-100 text-indigo-700 font-mono text-[9px] px-1 border border-indigo-200 rounded-sm font-semibold">
               内网小助手
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">
-            粘贴 192 内网或 100 专网地址，智能识别后即可复制。
+            一键复制服务器地址，或粘贴 192 内网或 100 专网地址，智能转换后即可复制。推荐分享给同学时转成 Tailscale 专网链接，方便校外访问。
           </p>
         </div>
       </div>

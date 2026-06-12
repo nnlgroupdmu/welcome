@@ -106,6 +106,31 @@ export default function App() {
   // User Route Preference for internal service cards
   const [routePreference, setRoutePreference] = useState<'tailscale' | 'lan'>('tailscale');
 
+  // Track if user has manually switched the network route preference
+  const [hasManuallySwitched, setHasManuallySwitched] = useState<boolean>(false);
+
+  // Auto-switch to successful connection on initial load
+  useEffect(() => {
+    if (hasManuallySwitched) return;
+
+    if (lanStatus === 'connected') {
+      setRoutePreference('lan');
+    } else if (tailscaleStatus === 'connected') {
+      setRoutePreference('tailscale');
+    }
+  }, [lanStatus, tailscaleStatus, hasManuallySwitched]);
+
+  // Unified controller for manual route preference switching, which re-checks the target network as requested
+  const handleRoutePreferenceChange = (newPref: 'tailscale' | 'lan') => {
+    setRoutePreference(newPref);
+    setHasManuallySwitched(true);
+    if (newPref === 'tailscale') {
+      testTailscaleConnection();
+    } else {
+      testLanConnection();
+    }
+  };
+
   // Back to Top button visibility state and scroll handler
   const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
 
@@ -378,9 +403,9 @@ export default function App() {
           </div>
 
           {/* Dynamic Tailscale Connection diagnostics & quick actions */}
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0 flex-wrap justify-center sm:justify-end">
             {/* Quick Links */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <a
                 id="btn-link-github"
                 href="https://github.com/nnlgroupdmu/welcome"
@@ -408,68 +433,134 @@ export default function App() {
 
             <div className="h-5 w-[1px] bg-slate-200 hidden sm:block"></div>
 
-            <div className="flex items-center">
-              {/* 统一单路网络状态显示按钮 */}
-              {(() => {
-                const isTesting = tailscaleStatus === 'testing' || lanStatus === 'testing';
-                const isTailscaleConnected = tailscaleStatus === 'connected';
-                const isLanConnected = lanStatus === 'connected';
+            {/* Unified Route Selector & Dynamic Diagnostics Dashboard (Highly Organic Capsule Integration) */}
+            <div className={`p-1 rounded-full border transition-all duration-350 flex items-center gap-1.5 select-none shadow-xs shrink-0 ${
+              routePreference === 'tailscale'
+                ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/15'
+                : 'bg-indigo-500/5 hover:bg-indigo-500/10 border-indigo-500/15'
+            }`}>
+              {/* Part 1: Route Status & Diagnostics Indicator (With Organic Frame-by-Frame Wait Transition) */}
+              <AnimatePresence mode="wait">
+                {(() => {
+                  const isTailscale = routePreference === 'tailscale';
+                  const currentStatus = isTailscale ? tailscaleStatus : lanStatus;
+                  const currentLatency = isTailscale ? latency : lanLatency;
+                  const networkName = isTailscale ? 'Tailscale专网' : '物理内网';
 
-                if (isTesting) {
-                  return (
-                    <div className="px-2.5 py-1 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 select-none animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                      <span>正在诊断网络...</span>
-                    </div>
-                  );
-                }
+                  if (currentStatus === 'testing') {
+                    return (
+                      <motion.div 
+                        key={`testing-${routePreference}`}
+                        initial={{ opacity: 0, x: -4 }}
+                        animate={{ 
+                          opacity: 1, 
+                          x: 0,
+                          transition: { duration: 0.6, ease: "easeInOut", delay: 0.2 } 
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          x: 4,
+                          transition: { duration: 0.4, ease: "easeInOut" } 
+                        }}
+                        className="pl-3 pr-1 py-0.5 text-slate-500 text-[11px] font-bold flex items-center gap-1.5 select-none animate-pulse"
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isTailscale ? 'bg-emerald-400' : 'bg-indigo-500'}`}></span>
+                        <span>{networkName} 诊断中...</span>
+                      </motion.div>
+                    );
+                  }
 
-                if (isTailscaleConnected) {
+                  if (currentStatus === 'connected') {
+                    const pingBg = isTailscale ? 'bg-emerald-400' : 'bg-indigo-400';
+                    const dotBg = isTailscale ? 'bg-emerald-500' : 'bg-indigo-500';
+                    const textClass = isTailscale 
+                      ? 'text-emerald-700 hover:text-emerald-800' 
+                      : 'text-indigo-700 hover:text-indigo-800';
+                    
+                    return (
+                      <motion.button
+                        id="btn-network-status"
+                        key={`connected-${routePreference}`}
+                        type="button"
+                        onClick={handleRefreshAndCheck}
+                        initial={{ opacity: 0, x: -4 }}
+                        animate={{ 
+                          opacity: 1, 
+                          x: 0,
+                          transition: { duration: 0.6, ease: "easeInOut", delay: 0.2 } 
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          x: 4,
+                          transition: { duration: 0.4, ease: "easeInOut" } 
+                        }}
+                        className={`pl-3 pr-1.5 py-0.5 ${textClass} hover:bg-black/5 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all duration-300 cursor-pointer select-none whitespace-nowrap overflow-hidden`}
+                        title={`当前路线 [${networkName}] 已联通。点击重新发起检验网络。`}
+                      >
+                        <span className="relative flex h-1.5 w-1.5 shrink-0">
+                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${pingBg} opacity-75`}></span>
+                          <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${dotBg}`}></span>
+                        </span>
+                        <span>
+                          {networkName}: 已联通 ({currentLatency}ms)
+                        </span>
+                      </motion.button>
+                    );
+                  }
+
+                  {/* Error or Unchecked states for the currently selected route */}
                   return (
-                    <button
+                    <motion.button
                       id="btn-network-status"
+                      key={`error-${routePreference}`}
+                      type="button"
                       onClick={handleRefreshAndCheck}
-                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
-                      title="已连接 Tailscale 零信任链路。点击重新探测或刷新。"
+                      initial={{ opacity: 0, x: -4 }}
+                      animate={{ 
+                        opacity: 1, 
+                        x: 0,
+                        transition: { duration: 0.6, ease: "easeInOut", delay: 0.2 } 
+                      }}
+                      exit={{ 
+                        opacity: 0, 
+                        x: 4,
+                        transition: { duration: 0.4, ease: "easeInOut" } 
+                      }}
+                      className="pl-3 pr-1.5 py-0.5 text-rose-700 hover:text-rose-800 hover:bg-black/5 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all duration-300 cursor-pointer select-none whitespace-nowrap overflow-hidden"
+                      title={`当前路线 [${networkName}] 未联通。点击重试诊断。`}
                     >
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+                      <span>
+                        {networkName}: 未联通 (点击重测)
                       </span>
-                      <span>Tailscale 已联通 ({latency}ms)</span>
-                    </button>
+                    </motion.button>
                   );
-                }
+                })()}
+              </AnimatePresence>
 
-                if (isLanConnected) {
-                  return (
-                    <button
-                      id="btn-network-status"
-                      onClick={handleRefreshAndCheck}
-                      className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
-                      title="已直连物理局域网。点击重新探测或刷新。"
-                    >
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-500"></span>
-                      </span>
-                      <span>物理内网已联通 ({lanLatency}ms)</span>
-                    </button>
-                  );
-                }
+              {/* Dynamic subtle separator inside the controller */}
+              <div className={`h-4.5 w-[1px] transition-colors duration-300 ${
+                routePreference === 'tailscale' ? 'bg-emerald-500/20' : 'bg-indigo-500/20'
+              }`} />
 
-                return (
-                  <button
-                    id="btn-network-status"
-                    onClick={handleRefreshAndCheck}
-                    className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100/60 text-slate-400 border border-slate-200/70 rounded-lg text-xs font-normal flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
-                    title="未检测到任何连接，如果是校外请确保 Tailscale 运行；如果是校内请连接实验室 WiFi。点击重试。"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse"></span>
-                    <span>网络连接未就绪 (点击重试)</span>
-                  </button>
-                );
-              })()}
+              {/* Part 2: Pure Capsule Toggle Selector */}
+              <button
+                id="header-toggle-route-pure-capsule"
+                type="button"
+                onClick={() => handleRoutePreferenceChange(routePreference === 'tailscale' ? 'lan' : 'tailscale')}
+                className="relative w-11 h-5.5 bg-slate-200/80 hover:bg-slate-200 rounded-full cursor-pointer transition-all duration-300 p-0.5 select-none shrink-0 border border-slate-300/30 focus:outline-hidden"
+                title={`当前网络连接路由：${routePreference === 'tailscale' ? 'Tailscale 专网 (点击一键切换为物理内网)' : '物理内网直连 (点击一键切换为 Tailscale)'}`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full shadow-xs transition-all duration-300 transform flex items-center justify-center ${
+                    routePreference === 'tailscale'
+                      ? 'translate-x-0 bg-emerald-500 text-white shadow-emerald-500/10'
+                      : 'translate-x-[20px] bg-indigo-600 text-white shadow-indigo-600/10'
+                  }`}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/90" />
+                </div>
+              </button>
             </div>
           </div>
 
@@ -497,12 +588,12 @@ export default function App() {
               {/* 热血大标题 */}
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight text-white">
                 在这里，由你来定义你的方向，<br className="hidden sm:inline" />
-                用本真照亮科研生活。
+                即刻闪亮启程。
               </h2>
 
               {/* 饱满的团队寄语（不删字，保留灵感） */}
               <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">
-                欢迎来到我们的灵感主场。这是一个为每一位团队成员打造的开源资源与共享中心。无论你在寝室还是在实验室，我们都已为你搭建好畅通无阻的技术桥梁，只为支撑你每一个不设限的奇思妙想。
+                欢迎加入我们的实验室！科研生活将因你的创造力而精彩。这是一个为每一位团队成员打造的资源共享中心。无论你在寝室还是在实验室，我们都已为你搭建好畅通无阻的技术桥梁，只为支撑你每一个不设限的奇思妙想。
               </p>
             </div>
 
@@ -516,7 +607,7 @@ export default function App() {
                 <span className="text-[11px] font-semibold text-slate-300 tracking-wide uppercase">物理内网 / Tailscale 双路连接</span>
               </div>
               <p className="text-xs text-slate-400 leading-normal">
-                连接实验室 WiFi 以加载网站的完整资源，校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-900 rounded text-[11px]">Tailscale</code> 虚拟专网以加载和使用内网资源。
+                                连接实验室 WiFi 以加载网站的完整资源，校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-900 rounded text-[11px]">Tailscale</code> 虚拟专网以使用。
               </p>
             </div>
 
@@ -533,7 +624,7 @@ export default function App() {
             <input
               id="input-global-search"
               type="text"
-              placeholder="搜索任何站内指南、服务应用名称或备忘内容..."
+              placeholder="搜索任何站内指南或备忘内容..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-slate-800"
@@ -698,7 +789,11 @@ export default function App() {
                 href={routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto bg-teal-600 hover:bg-teal-500 active:scale-95 duration-100 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition shadow cursor-pointer text-center"
+                className={`w-full sm:w-auto active:scale-95 duration-100 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer text-center ${
+                  routePreference === 'tailscale'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 hover:shadow-emerald-100/50 border border-emerald-500/10'
+                    : 'bg-indigo-600 hover:bg-indigo-500 hover:shadow-indigo-100/50 border border-indigo-500/10'
+                }`}
               >
                 <Send className="w-3.5 h-3.5" /> 发布一条笔记
               </a>
@@ -783,11 +878,16 @@ export default function App() {
                             href={`${routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}/memos/${memo.rawId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-slate-400 hover:text-teal-600 transition p-1 rounded-md hover:bg-slate-100 flex items-center gap-1 text-[10px] font-medium"
-                            title="查看原站详情"
+                            // 【新样式】：彻底打破原有 Tag 的高圆角和背景，变成半透明、低调的小方角气泡
+                            className={`transition-all duration-200 px-2 py-0.5 rounded-md flex items-center gap-1 text-[10px] font-semibold border border-transparent hover:shadow-xs active:scale-95 ${
+                              routePreference === 'tailscale'
+                                ? 'text-emerald-600 bg-emerald-50/40 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
+                                : 'text-indigo-600 bg-indigo-50/40 hover:bg-indigo-500 hover:text-white hover:border-indigo-500'
+                            }`}
+                            title={`查看原站详情 (${routePreference === 'tailscale' ? 'Tailscale 专网' : '物理局域网'})`}
                           >
                             查看详情
-                            <ExternalLink className="w-3 h-3" /> {/* 注：需要从 lucide-react 引入 ExternalLink 图标 */}
+                            <ExternalLink className="w-2.5 h-2.5 opacity-80" />
                           </a>
                         </div>
 
@@ -849,7 +949,7 @@ export default function App() {
                     </span>
                     <div>
                       <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
-                      <p className="text-xs text-slate-400">服务器已部署的工具，点击一键跳转</p>
+                      <p className="text-xs text-slate-400">在这里切换要访问的内网类型，一键跳转工具组件。自动改变站内所有跳转连接</p>
                     </div>
                   </div>
                 </div>
@@ -867,7 +967,7 @@ export default function App() {
                   <button
                     id="btn-toggle-route-ts"
                     type="button"
-                    onClick={() => setRoutePreference('tailscale')}
+                    onClick={() => handleRoutePreferenceChange('tailscale')}
                     className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${routePreference === 'tailscale'
                         ? 'text-white'
                         : 'text-slate-600 hover:text-slate-950 font-semibold'
@@ -882,7 +982,7 @@ export default function App() {
                   <button
                     id="btn-toggle-route-lan"
                     type="button"
-                    onClick={() => setRoutePreference('lan')}
+                    onClick={() => handleRoutePreferenceChange('lan')}
                     className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${routePreference === 'lan'
                         ? 'text-white'
                         : 'text-slate-600 hover:text-slate-950 font-semibold'
@@ -917,9 +1017,18 @@ export default function App() {
                         className={`group relative border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
                         title={`点击快捷跳转：${activeUrl}`}
                       >
+                        {/* Subtle side glow indicator matching active route preference */}
+                        <div className={`absolute left-0 top-3 bottom-3 w-[2.5px] rounded-r scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 ${
+                          routePreference === 'tailscale' ? 'bg-emerald-500' : 'bg-indigo-500'
+                        }`} />
+
                         <div className="flex items-start gap-3.5 min-w-0">
-                          {/* App icon frame */}
-                          <div className="p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0">
+                          {/* Richer app icon frame with matching color feedback on group hover */}
+                          <div className={`p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0 ${
+                            routePreference === 'tailscale'
+                              ? 'group-hover:bg-emerald-50/55 group-hover:border-emerald-200'
+                              : 'group-hover:bg-indigo-50/55 group-hover:border-indigo-200'
+                          }`}>
                             {getServiceIcon(srv.icon)}
                           </div>
 
@@ -933,18 +1042,26 @@ export default function App() {
                               {srv.description}
                             </p>
 
-                            {/* Selected route destination label */}
+                            {/* Selected route destination label with coordinated text colors */}
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>
-                              <span className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]">
+                              <span className={`text-[10px] font-mono truncate max-w-[200px] transition-colors duration-300 ${
+                                routePreference === 'tailscale' 
+                                  ? 'text-emerald-600 font-medium' 
+                                  : 'text-indigo-600 font-medium'
+                              }`}>
                                 {routePreference === 'tailscale' ? 'TS 专网 ' : '物理内网 '}: {activeUrl.replace(/^https?:\/\//i, '')}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Action arrow */}
-                        <div className="p-2 rounded-lg text-slate-400 group-hover:text-slate-750 bg-slate-50/60 group-hover:bg-slate-100 transition duration-150 shrink-0">
+                        {/* Action arrow with dynamic route preference colors */}
+                        <div className={`p-2 rounded-lg transition duration-150 shrink-0 ${
+                          routePreference === 'tailscale'
+                            ? 'text-slate-400 bg-slate-50/60 group-hover:text-emerald-700 group-hover:bg-emerald-100/60'
+                            : 'text-slate-400 bg-slate-50/60 group-hover:text-indigo-700 group-hover:bg-indigo-100/60'
+                        }`}>
                           <ArrowUpRight className="w-4 h-4" />
                         </div>
                       </a>
