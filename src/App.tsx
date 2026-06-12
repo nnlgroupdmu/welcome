@@ -4,32 +4,32 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  motion, 
-  AnimatePresence 
+import {
+  motion,
+  AnimatePresence
 } from 'motion/react';
-import { 
-  Terminal, 
-  Cpu, 
-  Layers, 
-  Search, 
-  Plus, 
-  X, 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  BookOpen, 
-  StickyNote, 
-  FolderClosed, 
-  Code, 
-  Home, 
-  Activity, 
-  Clock, 
-  Sparkles, 
-  Laptop, 
-  Package, 
-  FileText, 
-  ChevronRight, 
+import {
+  Terminal,
+  Cpu,
+  Layers,
+  Search,
+  Plus,
+  X,
+  ExternalLink,
+  Copy,
+  Check,
+  BookOpen,
+  StickyNote,
+  FolderClosed,
+  Code,
+  Home,
+  Activity,
+  Clock,
+  Sparkles,
+  Laptop,
+  Package,
+  FileText,
+  ChevronRight,
   Send,
   Trash2,
   PlusCircle,
@@ -130,7 +130,7 @@ export default function App() {
     const fetchSinglePath = async (url: string) => {
       const controller = new AbortController();
       const timerId = setTimeout(() => controller.abort(), 2500); // 稍微宽限到 2.5 秒
-      
+
       try {
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timerId);
@@ -148,16 +148,16 @@ export default function App() {
 
       // 4. 解析数据列表
       const list = Array.isArray(data) ? data : (data.memos || data.data || []);
-      
+
       if (list && list.length > 0) {
         const mapped: MemoPost[] = list.map((item: any, idx: number) => {
           const content = item.content || '';
-          
+
           // 5. 极致的数据清洗，彻底封死 toLowerCase 白屏隐患
           let rawTags = item.tags || [];
           // 确保过滤掉 rawTags 里的所有非字符串、undefined 或空值
-          let tags: string[] = Array.isArray(rawTags) 
-            ? rawTags.filter((t: any) => typeof t === 'string' && t.trim() !== '') 
+          let tags: string[] = Array.isArray(rawTags)
+            ? rawTags.filter((t: any) => typeof t === 'string' && t.trim() !== '')
             : [];
 
           if (tags.length === 0) {
@@ -166,7 +166,7 @@ export default function App() {
               tags = hashTags.map((t: string) => t.replace('#', '').trim());
             }
           }
-          
+
           // 再次检查，如果是空数组，塞入标准兜底标签
           if (tags.length === 0) {
             tags = ['内网同步'];
@@ -174,7 +174,7 @@ export default function App() {
 
           // 1. 获取原始用户名
           let rawAuthor = item.creatorName || item.creatorUsername || item.creator || '内网成员';
-          
+
           // 2. 简化用户名：如果是 users/NAME，替换为 u/NAME
           if (rawAuthor.startsWith('users/')) {
             rawAuthor = rawAuthor.replace('users/', 'u/');
@@ -197,6 +197,7 @@ export default function App() {
 
           return {
             id: `remote-${item.id || idx}`,
+            rawId: item.name ? item.name.split('/').pop() : String(item.id),               // 新增：保存原始 ID
             author: rawAuthor,                          // 已经是简化后的 u/NAME
             avatarUrl: avatarUrl,                       // 新增字段：传给前端渲染真实头像
             avatarSeed: rawAuthor.replace('u/', '').slice(0, 2), // 如果没头像，用去掉 u/ 后的名字前两位做文字兜底
@@ -217,7 +218,7 @@ export default function App() {
 
   const testTailscaleConnection = async () => {
     setTailscaleStatus('testing');
-    
+
     // 找一个绝对存在的内网服务作为靶点（例如你的 Memos 或 AList 节点）
     const targets = [
       "http://100.68.153.123:5230/",   // Tailscale Memos 端口
@@ -245,10 +246,10 @@ export default function App() {
 
   const testLanConnection = async () => {
     setLanStatus('testing');
-    
+
     // 以局域网 Memos 端口作为物理内网靶点
     const targetUrl = "http://192.168.31.240:5230/";
-    
+
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 1200); // 1.2秒超时
 
@@ -329,16 +330,16 @@ export default function App() {
   // Filters logic
   const filteredNavItems = navItems.filter(item => {
     const matchesCategory = activeCategory === '全部' || (item.categories && item.categories.includes(activeCategory));
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   const filteredMemos = memos.filter(item => {
-    const matchesSearch = item.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+    const matchesSearch = item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+
     const matchesTag = !selectedTag || item.tags.includes(selectedTag);
     return matchesSearch && matchesTag;
   });
@@ -351,13 +352,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans tech-grid-bg antialiased selection:bg-teal-500 selection:text-white pb-16">
-      
+
       {/* <AnnouncementBanner /> */}
 
       {/* ================================= HEADER BAR ================================= */}
       <header id="main-header" className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          
+
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-slate-900 text-teal-400 rounded-lg flex items-center justify-center shrink-0 shadow-xs">
               <Terminal className="w-4 h-4" />
@@ -371,17 +372,17 @@ export default function App() {
           <div className="flex items-center gap-4 shrink-0">
             {/* Quick Links */}
             <div className="flex items-center gap-1.5">
-              <a 
+              <a
                 id="btn-link-github"
-                href="https://github.com/nnlgroupdmu/welcome" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+                href="https://github.com/nnlgroupdmu/welcome"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                 title="访问 GitHub 仓库"
               >
                 <Github className="w-5 h-5" />
               </a>
-              <button 
+              <button
                 id="btn-link-contact"
                 onClick={() => handleCopyToClipboard('mistiiixv@gmail.com', 'admin-email')}
                 className="p-2 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors cursor-pointer relative"
@@ -416,7 +417,7 @@ export default function App() {
 
                 if (isTailscaleConnected) {
                   return (
-                    <button 
+                    <button
                       id="btn-network-status"
                       onClick={handleRefreshAndCheck}
                       className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
@@ -433,7 +434,7 @@ export default function App() {
 
                 if (isLanConnected) {
                   return (
-                    <button 
+                    <button
                       id="btn-network-status"
                       onClick={handleRefreshAndCheck}
                       className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200/80 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
@@ -449,7 +450,7 @@ export default function App() {
                 }
 
                 return (
-                  <button 
+                  <button
                     id="btn-network-status"
                     onClick={handleRefreshAndCheck}
                     className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100/60 text-slate-400 border border-slate-200/70 rounded-lg text-xs font-normal flex items-center gap-1.5 transition cursor-pointer select-none whitespace-nowrap"
@@ -471,11 +472,11 @@ export default function App() {
         {/* 背景网格与双色渐变光晕（保留完整氛围感） */}
         <div className="absolute inset-0 opacity-5 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
         <div className="absolute top-1/2 left-1/3 w-[500px] h-[400px] bg-gradient-to-r from-teal-500/10 to-indigo-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2"></div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* 使用 md:flex 结构，让硬核提示挂在右侧，从而释放下方的纵向空间 */}
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            
+
             {/* 左侧：保留完整情感和叙事，但压缩了间距（space-y-4 改为 space-y-2.5） */}
             <div className="max-w-3xl space-y-2.5">
               {/* Slogan Badge */}
@@ -483,13 +484,13 @@ export default function App() {
                 <Sparkles className="w-3.5 h-3.5 text-teal-400 animate-pulse shrink-0" />
                 <span className="font-mono">Move as we wish, shine as we are.</span>
               </div>
-              
+
               {/* 热血大标题 */}
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight text-white">
                 在这里，由你来定义你的方向，<br className="hidden sm:inline" />
                 用本真照亮科研生活。
               </h2>
-              
+
               {/* 饱满的团队寄语（不删字，保留灵感） */}
               <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">
                 欢迎来到我们的灵感主场。这是一个为每一位团队成员打造的开源资源与共享中心。无论你在寝室还是在实验室，我们都已为你搭建好畅通无阻的技术桥梁，只为支撑你每一个不设限的奇思妙想。
@@ -517,10 +518,10 @@ export default function App() {
       {/* ================================= SEARCH CONTROL BAR ================================= */}
       <section id="search-filter-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <div className="bg-white rounded-xl shadow-xs border border-slate-200/90 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          
+
           <div className="relative w-full md:max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-35 top-1/2 -translate-y-1/2" style={{ left: '0.85rem' }} />
-            <input 
+            <input
               id="input-global-search"
               type="text"
               placeholder="搜索任何站内指南、服务应用名称或备忘内容..."
@@ -537,24 +538,23 @@ export default function App() {
                 id={`btn-tag-filter-${tag}`}
                 key={tag}
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                className={`px-2 py-1 rounded-md border font-medium transition ${
-                  selectedTag === tag 
-                    ? 'bg-teal-600 border-teal-600 text-white' 
+                className={`px-2 py-1 rounded-md border font-medium transition ${selectedTag === tag
+                    ? 'bg-teal-600 border-teal-600 text-white'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600 border-slate-200'
-                }`}
+                  }`}
               >
                 #{tag}
               </button>
             ))}
             {selectedTag && (
-              <button 
+              <button
                 id="btn-clear-tag"
                 onClick={() => setSelectedTag(null)}
                 className="text-xs text-slate-400 hover:text-slate-600 font-medium ml-2 transition-colors cursor-pointer inline-flex items-center gap-0.5 bg-transparent border-0 p-0"
               >
                 <span className="text-sm leading-none font-bold">&times;</span>
                 <span>清除筛选</span>
-               </button>
+              </button>
             )}
           </div>
 
@@ -563,10 +563,10 @@ export default function App() {
 
       {/* ================================= MAIN SECTIONS GRID ================================= */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* ================================= 左侧栏目 (Left Columns Container) ================================= */}
         <div className="contents lg:flex lg:flex-col lg:gap-8 lg:col-span-7">
-          
+
           {/* ----------------- 1. 站内专区 (INTERNAL NAVIGATION) ----------------- */}
           <section id="section-internal-nav" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-1 lg:order-none">
             <div>
@@ -591,11 +591,10 @@ export default function App() {
                       id={`btn-nav-tab-${tab}`}
                       key={tab}
                       onClick={() => setActiveCategory(tab)}
-                      className={`relative px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 overflow-hidden cursor-pointer ${
-                        isActive 
-                          ? 'text-white shadow-xs' 
+                      className={`relative px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 overflow-hidden cursor-pointer ${isActive
+                          ? 'text-white shadow-xs'
                           : 'bg-slate-100 hover:bg-slate-200/50 text-slate-600 hover:text-slate-900 font-semibold'
-                      }`}
+                        }`}
                     >
                       {isActive && (
                         <motion.div
@@ -711,16 +710,16 @@ export default function App() {
                     >
                       {/* Left glowing marker */}
                       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300" />
-                      
+
                       {/* Author block */}
                       <div className="flex sm:flex-col items-center gap-2.5 w-full sm:w-28 shrink-0 text-left sm:text-center">
                         {/* 判断是否有 Memos 的真实头像，如果有就用 <img>，没有或者加载失败就自动退回到文字头像 */}
                         {memo.avatarUrl ? (
-                          <img 
+                          <img
                             src={
                               // 自动适配双路网络环境：如果头像地址是相对路径（如 /assets/...），补全为当前正确的内网网关
-                              memo.avatarUrl.startsWith('http') 
-                                ? memo.avatarUrl 
+                              memo.avatarUrl.startsWith('http')
+                                ? memo.avatarUrl
                                 : `${routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}${memo.avatarUrl}`
                             }
                             alt={memo.author}
@@ -735,15 +734,23 @@ export default function App() {
                             {memo.avatarSeed.toUpperCase()}
                           </div>
                         )}
-                        
-                        <div className="text-left sm:text-center flex-1 sm:flex-initial">
-                          {/* 此时渲染出来的已经是 u/NAME 了 */}
-                          <h4 className="font-bold text-xs text-slate-950 line-clamp-1">{memo.author}</h4> 
+
+                        <a
+                          href={`${routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}/${memo.author}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-left sm:text-center flex-1 sm:flex-initial group/author hover:opacity-80 transition"
+                          title="打开作者 Memos 主页"
+                        >
+                          {/* 鼠标悬停名字时加一个下划线提示 */}
+                          <h4 className="font-bold text-xs text-slate-950 line-clamp-1 group-hover/author:underline group-hover/author:text-teal-600">
+                            {memo.author}
+                          </h4>
                           <span className="text-[10px] text-slate-400 font-mono flex items-center justify-start sm:justify-center gap-0.5 mt-0.5">
                             <Clock className="w-2.5 h-2.5" />
                             {memo.timestamp}
                           </span>
-                        </div>
+                        </a>
                       </div>
 
                       {/* Memo content body */}
@@ -751,19 +758,28 @@ export default function App() {
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                           <div className="flex flex-wrap items-center gap-1.5">
                             {memo.tags.map(tag => (
-                              <span 
-                                key={tag} 
+                              <span
+                                key={tag}
                                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition ${
-                                  selectedTag === tag 
-                                    ? 'bg-teal-600 text-white' 
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition ${selectedTag === tag
+                                    ? 'bg-teal-600 text-white'
                                     : 'bg-teal-50/60 text-teal-800 hover:bg-teal-100 border border-teal-100/50'
-                                }`}
+                                  }`}
                               >
                                 #{tag}
                               </span>
                             ))}
                           </div>
+                          <a
+                            href={`${routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}/memos/${memo.rawId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-slate-400 hover:text-teal-600 transition p-1 rounded-md hover:bg-slate-100 flex items-center gap-1 text-[10px] font-medium"
+                            title="查看原站详情"
+                          >
+                            查看详情
+                            <ExternalLink className="w-3 h-3" /> {/* 注：需要从 lucide-react 引入 ExternalLink 图标 */}
+                          </a>
                         </div>
 
                         {/* Content text */}
@@ -776,7 +792,7 @@ export default function App() {
                               ul: (props) => <ul className="list-disc pl-5 mb-2 mt-1 space-y-1.5" {...props} />,
                               ol: (props) => <ol className="list-decimal pl-5 mb-2 mt-1 space-y-1.5" {...props} />,
                               li: (props) => <li className="text-sm text-slate-600 pl-0.5 leading-relaxed" {...props} />,
-                              code: ({node, className, children, ...props} : any) => (
+                              code: ({ node, className, children, ...props }: any) => (
                                 <code className="font-mono text-[0.875em] bg-slate-100/80 text-teal-600 px-1.5 py-0.5 rounded border border-slate-200/40" {...props}>
                                   {children}
                                 </code>
@@ -809,10 +825,10 @@ export default function App() {
 
         {/* ================================= 右侧栏目 (Right Column Container) ================================= */}
         <div className="w-full lg:col-span-5 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:flex lg:flex-col">
-          
+
           {/* 内部滚动壳：负责在高度不够时提供滚动，pr-2 为右侧滚动条留出空隙防止挤压内容 */}
           <div className="w-full h-full lg:overflow-y-auto lg:pr-2 flex flex-col lg:gap-8 scrollbar-container">
-            
+
             {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) ----------------- */}
             <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none shrink-0">
               <div>
@@ -831,23 +847,21 @@ export default function App() {
                 {/* Dynamic Sliding Route Preference Switcher */}
                 <div className="mb-5 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/50 relative overflow-hidden">
                   {/* Dynamic sliding indicator background */}
-                  <div 
-                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out pointer-events-none z-0 ${
-                      routePreference === 'tailscale' 
-                        ? 'left-1 bg-emerald-600' 
+                  <div
+                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out pointer-events-none z-0 ${routePreference === 'tailscale'
+                        ? 'left-1 bg-emerald-600'
                         : 'left-[calc(50%+2px)] bg-indigo-600'
-                    }`}
+                      }`}
                   />
 
                   <button
                     id="btn-toggle-route-ts"
                     type="button"
                     onClick={() => setRoutePreference('tailscale')}
-                    className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
-                      routePreference === 'tailscale'
+                    className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${routePreference === 'tailscale'
                         ? 'text-white'
                         : 'text-slate-600 hover:text-slate-950 font-semibold'
-                    }`}
+                      }`}
                     title="默认首选：通过 Tailscale 零信任网络访问"
                   >
                     <span className="relative z-10 flex items-center gap-1.5">
@@ -859,11 +873,10 @@ export default function App() {
                     id="btn-toggle-route-lan"
                     type="button"
                     onClick={() => setRoutePreference('lan')}
-                    className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${
-                      routePreference === 'lan'
+                    className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${routePreference === 'lan'
                         ? 'text-white'
                         : 'text-slate-600 hover:text-slate-950 font-semibold'
-                    }`}
+                      }`}
                     title="实验室局域网直连测试"
                   >
                     <span className="relative z-10 flex items-center gap-1.5">
@@ -885,7 +898,7 @@ export default function App() {
                       : 'bg-indigo-500';
 
                     return (
-                      <a 
+                      <a
                         id={`service-card-${srv.id}`}
                         key={srv.id}
                         href={activeUrl}
@@ -909,7 +922,7 @@ export default function App() {
                             <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 leading-normal">
                               {srv.description}
                             </p>
-                            
+
                             {/* Selected route destination label */}
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>

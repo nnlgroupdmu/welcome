@@ -24,6 +24,7 @@ export interface ServiceAsset {
 
 export interface MemoPost {
   id: string;
+  rawId: string;     // 新增：Memos 原站的真实 ID（用于拼接跳转链接）
   author: string;
   avatarSeed: string; // for dynamic avatar generation
   avatarUrl?: string; // 新增：Memos 系统提供的真实头像图片 URL（可选）

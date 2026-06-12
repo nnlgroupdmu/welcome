@@ -320,7 +320,7 @@ docker exec -it [容器名] /bin/bash
 
 ### 2.2 环境配置
 
-由于使用了 docker，环境是非常独立而安全的，不需要再使用 conda。2026 年初几乎所有 conda 源全部失效。我们推荐使用 pip 安装环境。
+由于使用了 docker，环境是非常独立而安全的，不需要再使用 conda。2026 年初几乎所有 conda 源全部失效。我们推荐使用 pip 安装环境。（如果你想，你仍然可以在容器里使用 conda）
 
 既然镜像里已经预装了对应 CUDA 12.8 的高性能 Python 和 PyTorch，直接用 `pip` 是最稳的。
 
