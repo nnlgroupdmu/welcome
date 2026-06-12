@@ -82,6 +82,12 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState<string>('全部');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isNavExpanded, setIsNavExpanded] = useState<boolean>(false);
+  const [visibleMemosCount, setVisibleMemosCount] = useState<number>(5);
+
+  // Automatically reset visible memos count when filters change to avoid empty-state or weird list size jumps
+  useEffect(() => {
+    setVisibleMemosCount(5);
+  }, [selectedTag, searchQuery]);
 
   // Local UX State: Feedback message for script copying
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -698,7 +704,7 @@ export default function App() {
             {/* Memos List Stream */}
             <div id="memos-feed-stream" className="space-y-5 w-full">
               {filteredMemos.length > 0 ? (
-                filteredMemos.slice(0, 5).map((memo, index) => {
+                filteredMemos.slice(0, visibleMemosCount).map((memo, index) => {
                   return (
                     <motion.div
                       id={`memo-card-${memo.id}`}
@@ -816,6 +822,28 @@ export default function App() {
                   <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
                     您可以使用上方的“发布一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
                   </p>
+                </div>
+              )}
+
+              {/* Load More Button or All Loaded Status Indicator */}
+              {filteredMemos.length > 5 && (
+                <div className="flex flex-col items-center justify-center pt-4 border-t border-slate-100/80">
+                  {filteredMemos.length > visibleMemosCount ? (
+                    <button
+                      id="btn-load-more-memos"
+                      key="load-more-btn"
+                      onClick={() => setVisibleMemosCount(prev => prev + 5)}
+                      className="px-6 py-2 bg-slate-50 hover:bg-teal-50 border border-slate-200/80 hover:border-teal-300/80 text-teal-700 hover:text-teal-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs shrink-0 active:scale-98"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      加载更多笔记 (还有 {filteredMemos.length - visibleMemosCount} 条)
+                    </button>
+                  ) : (
+                    <p className="text-xs text-slate-400 font-medium flex items-center gap-1 py-1">
+                      <Check className="w-3.5 h-3.5 text-slate-400" />
+                      已加载全部共 {filteredMemos.length} 条笔记
+                    </p>
+                  )}
                 </div>
               )}
             </div>
