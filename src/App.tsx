@@ -51,6 +51,7 @@ import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入
 import DualRouteConverter from './components/DualRouteConverter'; // 🌟 引入双路地址智能转换小工具
 import MemoContent from './components/MemoContent'; // 🌟 引入自适应内容折叠与高精测量组件
 import Markdown from 'react-markdown';
+import { GpuMonitor } from './components/GpuMonitor';
 
 
 export default function App() {
@@ -574,11 +575,11 @@ export default function App() {
         <div className="absolute top-1/2 left-1/3 w-[500px] h-[400px] bg-gradient-to-r from-teal-500/10 to-indigo-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          {/* 使用 md:flex 结构，让硬核提示挂在右侧，从而释放下方的纵向空间 */}
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          {/* 使用 md:flex 结构，让硬核提示与集群算力挂在右侧，完美结合 */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8 lg:gap-12">
 
-            {/* 左侧：保留完整情感和叙事，但压缩了间距（space-y-4 改为 space-y-2.5） */}
-            <div className="max-w-3xl space-y-2.5">
+            {/* 左侧：保留完整情感和叙事，但压缩了间距 */}
+            <div className="max-w-2xl lg:max-w-3xl space-y-2.5 flex-1">
               {/* Slogan Badge */}
               <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-medium tracking-wide">
                 <Sparkles className="w-3.5 h-3.5 text-teal-400 animate-pulse shrink-0" />
@@ -597,18 +598,21 @@ export default function App() {
               </p>
             </div>
 
-            {/* 右侧：将硬核的技术说明“挂”起来，成为不占下方高度的独立挂件 */}
-            <div className="md:max-w-xs p-3 rounded-xl bg-slate-800/30 border border-slate-800/60 backdrop-blur-sm shrink-0 self-start md:self-end">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-400"></span>
-                </span>
-                <span className="text-[11px] font-semibold text-slate-300 tracking-wide uppercase">物理内网 / Tailscale 双路连接</span>
+            {/* 右侧：融合物理网络直连说明与 GPU 算力监控的高级控制面板挂件 */}
+            <div className="w-full md:max-w-[340px] p-4.5 rounded-2xl bg-slate-950/45 border border-slate-800/80 backdrop-blur-md shadow-2xl shrink-0 self-start md:self-center flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75 animate-duration-1000"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-400 border border-teal-500/20 shadow-[0_0_6px_rgba(45,212,191,0.5)]"></span>
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-200 tracking-wider uppercase">物理内网 / Tailscale 双路连接</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-normal">
+                  本站需要物理内网直连与 Tailscale 专网。连接实验室 WiFi 同步内网数据；校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-950 border border-slate-800/80 rounded text-[10px]">Tailscale</code> 虚拟专网。
+                </p>
               </div>
-              <p className="text-xs text-slate-400 leading-normal">
-                                连接实验室 WiFi 以加载网站的完整资源，校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-900 rounded text-[11px]">Tailscale</code> 虚拟专网以使用。
-              </p>
+              <GpuMonitor />
             </div>
 
           </div>
