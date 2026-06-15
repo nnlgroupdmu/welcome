@@ -89,7 +89,7 @@ export const GpuMonitor: React.FC = () => {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-slate-400 font-semibold text-[11px] uppercase tracking-wider">
                     <Cpu className={`w-3.5 h-3.5 text-teal-400 ${isOnline ? 'animate-pulse' : ''}`} />
-                    <span>GPU 算力集群</span>
+                    <span>GPU 资源速览</span>
                     <span className="text-[9px] text-slate-500 font-normal normal-case">
                         ({gpus.length}卡)
                     </span>
@@ -198,8 +198,8 @@ export const GpuMonitor: React.FC = () => {
                             <div className="p-2 rounded-lg bg-rose-500/5 border border-rose-500/10 flex items-start gap-2 animate-fade-in">
                                 <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                                 <div className="flex-1 text-[10px] text-slate-400 leading-normal">
-                                    <span className="text-rose-400 font-semibold block mb-0.5">未检测到实时监控</span>
-                                    物理内网接口响应超时。欲载入集群真实负载，宿舍/校外请确保 <code className="text-teal-400 font-mono px-0.5 bg-slate-950 rounded">Tailscale</code> 运行且顶部连通路线为【TS专网】。
+                                    <span className="text-rose-400 font-semibold block mb-0.5">未检测到实时数据</span>
+                                    内网响应超时。宿舍/校外请确保 <code className="text-teal-400 font-mono px-0.5 bg-slate-950 rounded">Tailscale</code> 运行且顶部连通路线为绿色【Tailscale 专网】。
                                 </div>
                             </div>
                         )}

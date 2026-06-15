@@ -609,7 +609,7 @@ export default function App() {
                   <span className="text-[11px] font-bold text-slate-200 tracking-wider uppercase">物理内网 / Tailscale 双路连接</span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-normal">
-                  本站需要物理内网直连与 Tailscale 专网。连接实验室 WiFi 同步内网数据；校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-950 border border-slate-800/80 rounded text-[10px]">Tailscale</code> 虚拟专网。
+                  本站需要物理内网直连或 Tailscale 专网。连接实验室 WiFi 同步内网数据；校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-950 border border-slate-800/80 rounded text-[10px]">Tailscale</code> 虚拟专网。
                 </p>
               </div>
               <GpuMonitor />
@@ -953,7 +953,7 @@ export default function App() {
                     </span>
                     <div>
                       <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
-                      <p className="text-xs text-slate-400">在这里切换要访问的内网类型，一键跳转工具组件。自动改变站内所有跳转连接</p>
+                      <p className="text-xs text-slate-400">切换内网类型开关，将自动改变站内跳转连接，一键跳转工具组件。</p>
                     </div>
                   </div>
                 </div>
