@@ -46,7 +46,10 @@ import {
   Gauge,
   ArrowUp,
   SquarePen,
-  Globe
+  Globe,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 import { NavItem, ServiceAsset, MemoPost, ExternalLinkAsset } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS, DEFAULT_EXTERNAL_LINKS } from './data';
@@ -147,6 +150,61 @@ export default function App() {
       return newVal;
     });
   };
+
+  // Explict three-state theme management: 'light' | 'dark' | 'system'
+  type ThemeMode = 'light' | 'dark' | 'system';
+
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const cached = localStorage.getItem('seal_theme_mode');
+    if (cached === 'light' || cached === 'dark' || cached === 'system') {
+      return cached;
+    }
+    return 'system';
+  });
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    localStorage.setItem('seal_theme_mode', themeMode);
+
+    const checkDark = () => {
+      if (themeMode === 'light') return false;
+      if (themeMode === 'dark') return true;
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      return false;
+    };
+
+    setIsDarkMode(checkDark());
+
+    if (themeMode === 'system') {
+      if (typeof window === 'undefined' || !window.matchMedia) return;
+      
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        setIsDarkMode(e.matches);
+      };
+
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+      } else if (mediaQuery.addListener) {
+        mediaQuery.addListener(handleChange);
+        return () => mediaQuery.removeListener(handleChange);
+      }
+    }
+  }, [themeMode]);
+
+  // Apply dark mode class to HTML element on change
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   // States & handers for user customizing/uploading external shortcut links
   const [newLinkUseFavicon, setNewLinkUseFavicon] = useState<boolean>(true);
@@ -548,19 +606,19 @@ export default function App() {
   const allNavCategories = ['全部', ...Array.from(new Set(navItems.flatMap(item => item.categories || [])))];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans tech-grid-bg antialiased selection:bg-teal-500 selection:text-white pb-16">
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 font-sans tech-grid-bg antialiased selection:bg-teal-500 selection:text-white pb-16 transition-colors duration-200">
 
       {/* <AnnouncementBanner /> */}
 
       {/* ================================= HEADER BAR ================================= */}
-      <header id="main-header" className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-xs">
+      <header id="main-header" className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-slate-200/80 dark:border-zinc-800/90 shadow-xs transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
 
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-slate-900 text-teal-400 rounded-lg flex items-center justify-center shrink-0 shadow-xs">
               <Terminal className="w-4 h-4" />
             </div>
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 tracking-tight">
+            <h1 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               NNL Group Lab
             </h1>
           </div>
@@ -592,6 +650,87 @@ export default function App() {
                   </span>
                 )}
               </button>
+              <div className="relative inline-block text-left select-none" id="theme-dropdown-container">
+                <button
+                  id="btn-toggle-theme"
+                  onClick={() => setIsThemeDropdownOpen(prev => !prev)}
+                  className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center min-w-[36px] min-h-[36px]"
+                  title="主题设置"
+                >
+                  <motion.div
+                    key={themeMode}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {themeMode === 'light' && <Sun className="w-5 h-5 text-amber-500" />}
+                    {themeMode === 'dark' && <Moon className="w-5 h-5 text-indigo-400" />}
+                    {themeMode === 'system' && <Monitor className="w-5 h-5 text-slate-400 dark:text-slate-300" />}
+                  </motion.div>
+                </button>
+
+                <AnimatePresence>
+                  {isThemeDropdownOpen && (
+                    <>
+                      {/* Invisible backdrop helper to close on click outside */}
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setIsThemeDropdownOpen(false)} 
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        className="absolute right-0 mt-2 w-32 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-xl shadow-lg py-1.5 z-50 overflow-hidden"
+                      >
+                        <button
+                          onClick={() => {
+                            setThemeMode('light');
+                            setIsThemeDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer text-left ${
+                            themeMode === 'light'
+                              ? 'bg-amber-50/70 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <Sun className="w-3.5 h-3.5 shrink-0" />
+                          <span>浅色模式</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setThemeMode('dark');
+                            setIsThemeDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer text-left ${
+                            themeMode === 'dark'
+                              ? 'bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-400 dark:text-indigo-400'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <Moon className="w-3.5 h-3.5 shrink-0" />
+                          <span>深色模式</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setThemeMode('system');
+                            setIsThemeDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-1.5 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer text-left ${
+                            themeMode === 'system'
+                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <Monitor className="w-3.5 h-3.5 shrink-0" />
+                          <span>跟随系统</span>
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             <div className="h-5 w-[1px] bg-slate-200 hidden sm:block"></div>
@@ -731,7 +870,7 @@ export default function App() {
       </header>
 
       {/* ================================= INTRO BANNER ================================= */}
-      <section id="welcome-banner" className="bg-slate-900 text-white relative pt-12 pb-10 border-b border-slate-800 overflow-hidden">
+      <section id="welcome-banner" className="bg-slate-900 dark:bg-zinc-900 text-white relative pt-12 pb-10 border-b border-slate-800 dark:border-zinc-800 overflow-hidden">
         {/* 背景网格与双色渐变光晕（保留完整氛围感） */}
         <div className="absolute inset-0 opacity-5 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
         <div className="absolute top-1/2 left-1/3 w-[500px] h-[400px] bg-gradient-to-r from-teal-500/10 to-indigo-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2"></div>
@@ -755,23 +894,23 @@ export default function App() {
               </h2>
 
               {/* 饱满的团队寄语（不删字，保留灵感） */}
-              <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">
-                欢迎加入我们的实验室！科研生活将因你的创造力而精彩。这是一个为每一位团队成员打造的资源共享中心。无论你在寝室还是在实验室，我们都已为你搭建好畅通无阻的技术桥梁，只为支撑你每一个不设限的奇思妙想。
+              <p className="text-slate-400 dark:text-zinc-400 text-sm leading-relaxed max-w-2xl">
+                欢迎加入我们的实验室！科研生活将因你的创造力保持精彩。这是一个为每一位团队成员打造的资源共享中心。无论你在寝室还是在实验室，我们都已为你搭建好畅通无阻的技术桥梁，只为支撑你每一个不设限的奇思妙想。
               </p>
             </div>
 
             {/* 右侧：融合物理网络直连说明与 GPU 算力监控的高级控制面板挂件 */}
-            <div className="w-full md:max-w-[340px] p-4.5 rounded-2xl bg-slate-950/45 border border-slate-800/80 backdrop-blur-md shadow-2xl shrink-0 self-start md:self-center flex flex-col gap-2">
+            <div className="w-full md:max-w-[340px] p-4.5 rounded-2xl bg-slate-950/45 dark:bg-zinc-950/45 border border-slate-800/80 dark:border-zinc-800/85 backdrop-blur-md shadow-2xl shrink-0 self-start md:self-center flex flex-col gap-2">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75 animate-duration-1000"></span>
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-400 border border-teal-500/20 shadow-[0_0_6px_rgba(45,212,191,0.5)]"></span>
                   </span>
-                  <span className="text-[11px] font-bold text-slate-200 tracking-wider uppercase">物理内网 / Tailscale 双路连接</span>
+                  <span className="text-[11px] font-bold text-slate-200 dark:text-zinc-200 tracking-wider uppercase">物理内网 / Tailscale 双路连接</span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-normal">
-                  本站需要物理内网直连或 Tailscale 专网。连接实验室 WiFi 同步内网数据；校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-950 border border-slate-800/80 rounded text-[10px]">Tailscale</code> 虚拟专网。
+                <p className="text-[11px] text-slate-400 dark:text-zinc-400 leading-normal">
+                  本站需要物理内网直连或 Tailscale 专网。连接实验室 WiFi 同步内网数据；校外/宿舍请启动 <code className="text-teal-400 font-mono px-1 bg-slate-950 dark:bg-zinc-950 border border-slate-800/80 dark:border-zinc-800 rounded text-[10px]">Tailscale</code> 虚拟专网。
                 </p>
               </div>
               <GpuMonitor />
@@ -783,7 +922,7 @@ export default function App() {
 
       {/* ================================= SEARCH CONTROL BAR ================================= */}
       <section id="search-filter-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="bg-white rounded-xl shadow-xs border border-slate-200/90 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xs border border-slate-200/90 dark:border-zinc-800 p-4 flex flex-col md:flex-row items-center justify-between gap-4 transition-colors duration-200">
 
           <div className="relative w-full md:max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-35 top-1/2 -translate-y-1/2" style={{ left: '0.85rem' }} />
@@ -793,20 +932,20 @@ export default function App() {
               placeholder="搜索任何站内指南或备忘内容..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-slate-800"
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-lg text-sm bg-slate-50 dark:bg-zinc-950 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-slate-800 dark:text-zinc-100"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span>筛选 Memos 笔记标签:</span>
             {allMemoTags.map(tag => (
               <button
                 id={`btn-tag-filter-${tag}`}
                 key={tag}
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                className={`px-2 py-1 rounded-md border font-medium transition ${selectedTag === tag
+                className={`px-2 py-1 rounded-md border font-medium transition cursor-pointer ${selectedTag === tag
                     ? 'bg-teal-600 border-teal-600 text-white'
-                    : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600 border-slate-200'
+                    : 'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/80 dark:hover:bg-zinc-700/85 text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-zinc-800'
                   }`}
               >
                 #{tag}
@@ -834,16 +973,16 @@ export default function App() {
         <div className="contents lg:flex lg:flex-col lg:gap-8 lg:col-span-7">
 
           {/* ----------------- 1. 站内专区 (INTERNAL NAVIGATION) ----------------- */}
-          <section id="section-internal-nav" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-1 lg:order-none">
+          <section id="section-internal-nav" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-1 lg:order-none">
             <div>
-              <div className="flex items-center justify-between mb-5 pb-2.5 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-5 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
                 <div className="flex items-center gap-2.5">
-                  <span className="p-1.5 bg-teal-50 text-teal-700 rounded-lg">
+                  <span className="p-1.5 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 rounded-lg">
                     <Laptop className="w-5 h-5" />
                   </span>
                   <div>
-                    <h3 className="font-bold text-slate-900 text-base">站内专区</h3>
-                    <p className="text-xs text-slate-400">环境配置、资源使用规则和技术手册</p>
+                    <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">站内专区</h3>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500">环境配置、资源使用规则和技术手册</p>
                   </div>
                 </div>
               </div>
@@ -859,13 +998,13 @@ export default function App() {
                       onClick={() => setActiveCategory(tab)}
                       className={`relative px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 overflow-hidden cursor-pointer ${isActive
                           ? 'text-white shadow-xs'
-                          : 'bg-slate-100 hover:bg-slate-200/50 text-slate-600 hover:text-slate-900 font-semibold'
+                          : 'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/50 dark:hover:bg-zinc-700/60 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-slate-100 font-semibold'
                         }`}
                     >
                       {isActive && (
                         <motion.div
                           layoutId="activeCategoryBg"
-                          className="absolute inset-0 bg-teal-600 rounded-lg"
+                          className="absolute inset-0 bg-teal-600"
                           transition={{ type: "tween", ease: "easeInOut", duration: 0.22 }}
                         />
                       )}
@@ -885,27 +1024,27 @@ export default function App() {
                       href={item.linkUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group relative border border-slate-200/80 rounded-xl p-4.5 cursor-pointer bg-gradient-to-br from-white to-slate-50/40 hover:from-teal-50/10 hover:to-teal-50/30 hover:border-teal-400/60 hover:shadow-xs transition-all duration-300 flex flex-col justify-between text-left"
+                      className="group relative border border-slate-200/80 dark:border-zinc-800 rounded-xl p-4.5 cursor-pointer bg-gradient-to-br from-white to-slate-50/40 dark:from-zinc-900/85 dark:to-zinc-900/10 hover:from-teal-50/10 hover:to-teal-50/30 hover:border-teal-400/60 dark:hover:border-teal-500/50 hover:shadow-xs transition-all duration-300 flex flex-col justify-between text-left"
                     >
                       <div>
                         <div className="flex items-start justify-between mb-3.5">
-                          <span className="p-1.5 bg-slate-50 group-hover:bg-teal-100/60 rounded-lg transition-colors">
+                          <span className="p-1.5 bg-slate-50 dark:bg-zinc-800 group-hover:bg-teal-100/60 dark:group-hover:bg-teal-950/60 rounded-lg transition-colors">
                             {getCategoryIcon(item.categories?.[0] || '其他')}
                           </span>
                         </div>
 
-                        <h4 className="font-bold text-slate-800 text-sm group-hover:text-teal-950 transition-colors mb-1.5 line-clamp-1">
+                        <h4 className="font-bold text-slate-800 dark:text-zinc-200 text-sm group-hover:text-teal-950 dark:group-hover:text-teal-400 transition-colors mb-1.5 line-clamp-1">
                           {item.title}
                         </h4>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-4">
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed mb-4">
                           {item.description}
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] font-semibold text-teal-600 pt-2 border-t border-slate-100/80 gap-2">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-teal-600 dark:text-teal-400 pt-2 border-t border-slate-100/85 dark:border-zinc-800/85 gap-2">
                         <div className="flex flex-wrap gap-1">
                           {item.categories?.map(cat => (
-                            <span key={cat} className="bg-slate-100 group-hover:bg-teal-50/50 text-slate-600 group-hover:text-teal-800 rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap transition-colors">{cat}</span>
+                            <span key={cat} className="bg-slate-100 dark:bg-zinc-800 group-hover:bg-teal-50/50 dark:group-hover:bg-teal-950/50 text-slate-600 dark:text-zinc-400 group-hover:text-teal-800 dark:group-hover:text-teal-300 rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap transition-colors">{cat}</span>
                           ))}
                         </div>
                         <span className="flex items-center gap-0.5 font-mono group-hover:translate-x-0.5 transition-transform shrink-0">
@@ -915,20 +1054,20 @@ export default function App() {
                     </a>
                   ))
                 ) : (
-                  <div className="col-span-full py-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                  <div className="col-span-full py-12 text-center bg-slate-50 dark:bg-zinc-900/60 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl">
                     <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-xs text-slate-400">没有检索到相应的直达雷达文档</p>
+                    <p className="text-xs text-slate-400 dark:text-zinc-405">没有检索到相应的直达雷达文档</p>
                   </div>
                 )}
               </div>
 
               {/* Fold & Align Button Mechanism for Internal Navigation */}
               {filteredNavItems.length > 4 && (
-                <div className="flex justify-center mt-5 pt-4 border-t border-slate-100/80">
+                <div className="flex justify-center mt-5 pt-4 border-t border-slate-100/80 dark:border-zinc-800">
                   <button
                     id="btn-toggle-nav-expand"
                     onClick={() => setIsNavExpanded(!isNavExpanded)}
-                    className="px-4 py-1.5 bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300/80 text-teal-700 hover:text-teal-800 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+                    className="px-4 py-1.5 bg-slate-50 dark:bg-zinc-900 hover:bg-teal-50 dark:hover:bg-teal-950/30 border border-slate-200 dark:border-zinc-800 hover:border-teal-300/80 dark:hover:border-teal-500/50 text-teal-700 dark:text-teal-400 hover:text-teal-800 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-xs"
                   >
                     {isNavExpanded ? '收起部分指南' : `展开更多指南 (还有 ${filteredNavItems.length - 4} 篇)`}
                   </button>
@@ -938,15 +1077,15 @@ export default function App() {
           </section>
 
           {/* ----------------- 3. 资讯专区 (INFORMATION FEED - MEMOS) ----------------- */}
-          <section id="section-memos-feed" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-3 lg:order-none">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-2.5 border-b border-slate-100">
+          <section id="section-memos-feed" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-3 lg:order-none">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <span className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
+                <span className="p-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-lg">
                   <StickyNote className="w-5 h-5" />
                 </span>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">Memos 速递</h3>
-                  <p className="text-xs text-slate-400">在这里速览 Memos 笔记最新发布的内容</p>
+                  <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">Memos 速递</h3>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500">在这里速览 Memos 笔记最新发布的内容</p>
                 </div>
               </div>
 
@@ -976,7 +1115,7 @@ export default function App() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.04 }}
-                      className="group relative bg-gradient-to-br from-white to-slate-50/35 hover:from-white hover:to-teal-50/10 border border-slate-200/80 hover:border-teal-200/80 rounded-2xl p-4.5 sm:p-5 transition-all duration-300 hover:shadow-sm overflow-hidden flex flex-col sm:flex-row gap-4.5 items-start"
+                      className="group relative bg-gradient-to-br from-white to-slate-50/35 dark:from-zinc-900/85 dark:to-zinc-900/10 hover:from-white hover:to-teal-50/10 dark:hover:from-zinc-900 dark:hover:to-teal-950/10 border border-slate-200/80 dark:border-zinc-800 hover:border-teal-200/80 dark:hover:border-teal-500/50 rounded-2xl p-4.5 sm:p-5 transition-all duration-300 hover:shadow-sm overflow-hidden flex flex-col sm:flex-row gap-4.5 items-start"
                     >
                       {/* Left glowing marker */}
                       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-teal-400 to-emerald-500 scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300" />
@@ -997,26 +1136,26 @@ export default function App() {
                               // 防止图片挂掉导致白屏，挂掉时隐藏图片并显示文字兜底（可选）
                               e.currentTarget.style.display = 'none';
                             }}
-                            className="w-9 h-9 rounded-full object-cover border border-slate-200/80 sm:mx-auto shadow-xs"
+                            className="w-9 h-9 rounded-full object-cover border border-slate-200/80 dark:border-zinc-800/85 sm:mx-auto shadow-xs"
                           />
                         ) : (
-                          <div className="w-9 h-9 rounded-full bg-slate-900 text-teal-400 font-bold border border-slate-200/80 flex items-center justify-center text-sm font-mono sm:mx-auto shadow-xs">
+                          <div className="w-9 h-9 rounded-full bg-slate-900 dark:bg-zinc-800 text-teal-400 font-bold border border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-center text-sm font-mono sm:mx-auto shadow-xs">
                             {memo.avatarSeed.toUpperCase()}
                           </div>
                         )}
 
                         <a
-                          href={`${routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}/${memo.author}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-left sm:text-center flex-1 sm:flex-initial group/author hover:opacity-80 transition"
-                          title="打开作者 Memos 主页"
+                           href={`${routePreference === 'tailscale' ? "http://100.68.153.123:5230" : "http://192.168.31.240:5230"}/${memo.author}`}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="text-left sm:text-center flex-1 sm:flex-initial group/author hover:opacity-80 transition"
+                           title="打开作者 Memos 主页"
                         >
                           {/* 鼠标悬停名字时加一个下划线提示 */}
-                          <h4 className="font-bold text-xs text-slate-950 line-clamp-1 group-hover/author:underline group-hover/author:text-teal-600">
+                          <h4 className="font-bold text-xs text-slate-950 dark:text-zinc-200 line-clamp-1 group-hover/author:underline group-hover/author:text-teal-600 dark:group-hover/author:text-teal-400">
                             {memo.author}
                           </h4>
-                          <span className="text-[10px] text-slate-400 font-mono flex items-center justify-start sm:justify-center gap-0.5 mt-0.5">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono flex items-center justify-start sm:justify-center gap-0.5 mt-0.5">
                             <Clock className="w-2.5 h-2.5" />
                             {memo.timestamp}
                           </span>
@@ -1033,7 +1172,7 @@ export default function App() {
                                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition ${selectedTag === tag
                                     ? 'bg-teal-600 text-white'
-                                    : 'bg-teal-50/60 text-teal-800 hover:bg-teal-100 border border-teal-100/50'
+                                    : 'bg-teal-50/65 dark:bg-teal-950/30 text-teal-800 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 border border-teal-100/50 dark:border-teal-900/50'
                                   }`}
                               >
                                 #{tag}
@@ -1047,8 +1186,8 @@ export default function App() {
                             // 【新样式】：彻底打破原有 Tag 的高圆角和背景，变成半透明、低调的小方角气泡
                             className={`transition-all duration-200 px-2 py-0.5 rounded-md flex items-center gap-1 text-[10px] font-semibold border border-transparent hover:shadow-xs active:scale-95 ${
                               routePreference === 'tailscale'
-                                ? 'text-emerald-600 bg-emerald-50/40 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
-                                : 'text-indigo-600 bg-indigo-50/40 hover:bg-indigo-500 hover:text-white hover:border-indigo-500'
+                                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/40 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
+                                : 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/40 hover:bg-indigo-500 hover:text-white hover:border-indigo-500'
                             }`}
                             title={`查看原站详情 (${routePreference === 'tailscale' ? 'Tailscale 专网' : '物理局域网'})`}
                           >
@@ -1064,10 +1203,10 @@ export default function App() {
                   );
                 })
               ) : (
-                <div id="no-memos-fallback" className="py-16 text-center bg-white border border-dashed border-slate-200 rounded-2xl">
-                  <StickyNote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-slate-600">目前没有相关的实验室备忘随笔。</p>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                <div id="no-memos-fallback" className="py-16 text-center bg-white dark:bg-zinc-900/40 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
+                  <StickyNote className="w-12 h-12 text-slate-300 dark:text-zinc-600 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-slate-600 dark:text-zinc-300">目前没有相关的实验室备忘随笔。</p>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm mx-auto mt-1">
                     您可以使用上方的“发布一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
                   </p>
                 </div>
@@ -1075,20 +1214,20 @@ export default function App() {
 
               {/* Load More Button or All Loaded Status Indicator */}
               {filteredMemos.length > 5 && (
-                <div className="flex flex-col items-center justify-center pt-4 border-t border-slate-100/80">
+                <div className="flex flex-col items-center justify-center pt-4 border-t border-slate-100/80 dark:border-zinc-800">
                   {filteredMemos.length > visibleMemosCount ? (
                     <button
                       id="btn-load-more-memos"
                       key="load-more-btn"
                       onClick={() => setVisibleMemosCount(prev => prev + 5)}
-                      className="px-6 py-2 bg-slate-50 hover:bg-teal-50 border border-slate-200/80 hover:border-teal-300/80 text-teal-700 hover:text-teal-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs shrink-0 active:scale-98"
+                      className="px-6 py-2 bg-slate-50 dark:bg-zinc-900 hover:bg-teal-50 dark:hover:bg-teal-950/30 border border-slate-200 dark:border-zinc-800 hover:border-teal-300/80 dark:hover:border-teal-500/50 text-teal-700 dark:text-teal-400 hover:text-teal-800 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs shrink-0 active:scale-98"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       加载更多笔记 (还有 {filteredMemos.length - visibleMemosCount} 条)
                     </button>
                   ) : (
-                    <p className="text-xs text-slate-400 font-medium flex items-center gap-1 py-1">
-                      <Check className="w-3.5 h-3.5 text-slate-400" />
+                    <p className="text-xs text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1 py-1">
+                      <Check className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
                       已加载全部共 {filteredMemos.length} 条笔记
                     </p>
                   )}
@@ -1106,28 +1245,28 @@ export default function App() {
           <div className="w-full h-full lg:overflow-y-auto lg:pr-2 flex flex-col lg:gap-8 scrollbar-container">
 
             {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) ----------------- */}
-            <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none shrink-0">
+            <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none shrink-0">
               <div>
-                <div className="flex items-start justify-between mb-5 pb-2.5 border-b border-slate-100 gap-4">
+                <div className="flex items-start justify-between mb-5 pb-2.5 border-b border-slate-100 dark:border-zinc-800 gap-4">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg shrink-0">
+                    <span className="p-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 rounded-lg shrink-0">
                       <Layers className="w-5 h-5" />
                     </span>
                     <div className="min-w-0">
-                      <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
-                      <p className="text-xs text-slate-400 truncate md:whitespace-normal">切换内网类型开关，将自动改变站内跳转连接，一键跳转工具组件。</p>
+                      <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">内网专区</h3>
+                      <p className="text-xs text-slate-400 dark:text-zinc-500 truncate md:whitespace-normal">切换内网类型开关，将自动改变站内跳转连接，一键跳转工具组件。</p>
                     </div>
                   </div>
 
                   {/* Mode switch helper buttons */}
-                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/50 shrink-0">
+                  <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-zinc-800/85 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleIntranetViewModeChange('list')}
                       className={`p-1.5 rounded-md transition-all cursor-pointer ${
                         intranetViewMode === 'list'
-                          ? 'bg-white text-slate-800 shadow-xs font-semibold'
-                          : 'text-slate-400 hover:text-slate-600'
+                          ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-xs font-semibold'
+                          : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-200'
                       }`}
                       title="列表视图"
                     >
@@ -1138,8 +1277,8 @@ export default function App() {
                       onClick={() => handleIntranetViewModeChange('icons')}
                       className={`p-1.5 rounded-md transition-all cursor-pointer ${
                         intranetViewMode === 'icons'
-                          ? 'bg-white text-slate-800 shadow-xs font-semibold'
-                          : 'text-slate-400 hover:text-slate-600'
+                          ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-xs font-semibold'
+                          : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-200'
                       }`}
                       title="紧凑图标视图"
                     >
@@ -1149,7 +1288,7 @@ export default function App() {
                 </div>
 
                 {/* Dynamic Sliding Route Preference Switcher */}
-                <div className="mb-5 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/50 relative overflow-hidden">
+                <div className="mb-5 p-1 bg-slate-100 dark:bg-zinc-800 rounded-xl flex items-center gap-1 border border-slate-200/50 dark:border-zinc-800/85 relative overflow-hidden">
                   {/* Dynamic sliding indicator background */}
                   <div
                     className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-out pointer-events-none z-0 ${routePreference === 'tailscale'
@@ -1164,7 +1303,7 @@ export default function App() {
                     onClick={() => handleRoutePreferenceChange('tailscale')}
                     className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${routePreference === 'tailscale'
                         ? 'text-white'
-                        : 'text-slate-600 hover:text-slate-950 font-semibold'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-zinc-200 font-semibold'
                       }`}
                     title="默认首选：通过 Tailscale 零信任网络访问"
                   >
@@ -1179,12 +1318,12 @@ export default function App() {
                     onClick={() => handleRoutePreferenceChange('lan')}
                     className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 select-none cursor-pointer overflow-hidden z-10 ${routePreference === 'lan'
                         ? 'text-white'
-                        : 'text-slate-600 hover:text-slate-950 font-semibold'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-zinc-200 font-semibold'
                       }`}
                     title="实验室局域网直连测试"
                   >
                     <span className="relative z-10 flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${routePreference === 'lan' ? 'bg-white' : 'bg-indigo-500'}`}></span>
+                      <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-350 ${routePreference === 'lan' ? 'bg-white' : 'bg-indigo-500'}`}></span>
                       <span>物理局域网</span>
                     </span>
                   </button>
@@ -1206,9 +1345,9 @@ export default function App() {
                           {services.map(srv => {
                             const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
                             const activeBgHover = routePreference === 'tailscale'
-                              ? 'group-hover:border-emerald-400/80 group-hover:bg-emerald-50/15 group-hover:shadow-emerald-100/20'
-                              : 'group-hover:border-indigo-400/80 group-hover:bg-indigo-50/15 group-hover:shadow-indigo-100/20';
-                            const activeTextColor = routePreference === 'tailscale' ? 'group-hover:text-emerald-600' : 'group-hover:text-indigo-600';
+                              ? 'group-hover:border-emerald-400/80 group-hover:bg-emerald-50/15 dark:group-hover:bg-emerald-950/40 group-hover:shadow-emerald-100/20'
+                              : 'group-hover:border-indigo-400/80 group-hover:bg-indigo-50/15 dark:group-hover:bg-indigo-950/40 group-hover:shadow-indigo-100/20';
+                            const activeTextColor = routePreference === 'tailscale' ? 'group-hover:text-emerald-600 dark:group-hover:text-emerald-400' : 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400';
 
                             return (
                               <a
@@ -1221,7 +1360,7 @@ export default function App() {
                                 title={`${srv.name}\n${srv.description}\n\n点击立即跳转: ${activeUrl}`}
                               >
                                 {/* Circular/Squirclish App Icon Frame with strict dimensions */}
-                                <div className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 transition-all duration-300 flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover}`}>
+                                <div className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 dark:from-zinc-900 dark:to-zinc-950 border border-slate-200/80 dark:border-zinc-800 transition-all duration-300 flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover}`}>
                                   {/* Inner Icon */}
                                   <div className="transition-transform duration-300 group-hover:scale-110 flex items-center justify-center [&_svg]:w-7 [&_svg]:h-7 [&_img]:w-7 [&_img]:h-7">
                                     {getServiceIcon(srv.icon)}
@@ -1229,7 +1368,7 @@ export default function App() {
                                 </div>
 
                                 {/* Text label underneath */}
-                                <span className={`text-[11px] text-slate-500 font-bold mt-2 tracking-tight truncate max-w-full leading-tight transition-colors duration-300 ${activeTextColor}`}>
+                                <span className={`text-[11px] text-slate-500 dark:text-zinc-400 font-bold mt-2 tracking-tight truncate max-w-full leading-tight transition-colors duration-300 ${activeTextColor}`}>
                                   {srv.name.replace(' Memos', '').replace('轻笔记动态广场', '').replace('代码托管平台', '').replace('镜像打包', '').split(' ')[0]}
                                 </span>
                               </a>
@@ -1297,17 +1436,17 @@ export default function App() {
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto', marginBottom: 10 }}
                               exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                              className="overflow-hidden bg-slate-100/65 border border-slate-200/50 rounded-xl p-3 flex flex-col gap-2 my-1 text-left"
+                              className="overflow-hidden bg-slate-100/65 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/80 rounded-xl p-3 flex flex-col gap-2 my-1 text-left transition-colors duration-200"
                             >
-                              <div className="flex items-center justify-between border-b border-slate-200/40 pb-1.5">
-                                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                              <div className="flex items-center justify-between border-b border-slate-200/40 dark:border-slate-800 pb-1.5">
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                                   {editingLinkId ? <SquarePen className="w-3.5 h-3.5 text-indigo-500" /> : <Plus className="w-3.5 h-3.5 text-indigo-500" />}
                                   <span>{editingLinkId ? "编辑外部常用链接" : "新增外部常用链接"}</span>
                                 </span>
                                 <button
                                   type="button"
                                   onClick={handleCancelEdit}
-                                  className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -1315,72 +1454,72 @@ export default function App() {
 
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-[9px] font-bold text-slate-500">名称 *</label>
+                                  <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400">名称 *</label>
                                   <input
                                     type="text"
                                     required
                                     placeholder="比如: 百度学术"
                                     value={newLinkName}
                                     onChange={(e) => setNewLinkName(e.target.value)}
-                                    className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium"
+                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium"
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-[9px] font-bold text-slate-500">网址 *</label>
+                                  <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400">网址 *</label>
                                   <input
                                     type="text"
                                     required
                                     placeholder="baidu.com"
                                     value={newLinkUrl}
                                     onChange={(e) => setNewLinkUrl(e.target.value)}
-                                    className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-mono"
+                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-mono"
                                   />
                                 </div>
                               </div>
 
                               <div className="flex flex-col gap-1">
-                                <label className="text-[9px] font-bold text-slate-500">简短说明 (可选)</label>
+                                <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400">简短说明 (可选)</label>
                                 <input
                                   type="text"
                                   placeholder="对该外部快捷工具的描述..."
                                   value={newLinkDesc}
                                   onChange={(e) => setNewLinkDesc(e.target.value)}
-                                  className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium"
+                                  className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium"
                                 />
                               </div>
 
-                              <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/45 border-dashed">
+                              <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/45 dark:border-slate-800 border-dashed">
                                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
                                   <input
                                     type="checkbox"
                                     checked={newLinkUseFavicon}
                                     onChange={(e) => setNewLinkUseFavicon(e.target.checked)}
-                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
+                                    className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
                                   />
-                                  <span className="text-[10px] font-medium text-slate-600">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
+                                  <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
                                 </label>
                                 
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] font-bold text-slate-500 shrink-0">生成图标文字:</span>
+                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 shrink-0">生成图标文字:</span>
                                   <input
                                     type="text"
                                     maxLength={4}
                                     placeholder="默认切前1-2字"
                                     value={newLinkIconText}
                                     onChange={(e) => setNewLinkIconText(e.target.value)}
-                                    className="flex-1 text-[11px] px-2 py-0.5 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium placeholder:text-slate-400"
+                                    className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
                                     title="当未启用或无法抓取 Favicon 时，生成图标内显示的 1-4 位自定义字符"
                                   />
                                 </div>
                               </div>
 
-                              <div className="flex items-center justify-between gap-1.5 mt-1 p-1 bg-white border border-slate-100 rounded-lg">
+                              <div className="flex items-center justify-between gap-1.5 mt-1 p-1 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg">
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="text-[10px] font-medium text-slate-500 truncate shrink-0">图标自动匹配：</span>
-                                  <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate shrink-0">图标自动匹配：</span>
+                                  <div className="w-6 h-6 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
                                     <ExternalFavicon url={newLinkUrl} name={newLinkName || '新'} size="sm" useFavicon={newLinkUseFavicon} iconText={newLinkIconText} />
                                   </div>
-                                  <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 px-1 py-0.5 rounded-sm truncate">
+                                  <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">
                                     {autoAssignIcon(newLinkUrl, newLinkName)}
                                   </span>
                                 </div>
@@ -1406,8 +1545,8 @@ export default function App() {
                             >
                               <div id="external-tools-grid-icons" className="grid grid-cols-4 gap-y-3 gap-x-3 pt-2 pb-1.5 px-1.5">
                                 {externalLinks.map((ext, idx) => {
-                                  const activeBgHover = 'group-hover:border-indigo-400 group-hover:bg-indigo-50/15 group-hover:shadow-indigo-100/15';
-                                  const activeTextColor = 'group-hover:text-indigo-600';
+                                  const activeBgHover = 'group-hover:border-indigo-400 group-hover:bg-indigo-50/15 dark:group-hover:bg-indigo-950/40 group-hover:shadow-indigo-100/15';
+                                  const activeTextColor = 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400';
 
                                   return (
                                     <div key={ext.id} className="relative group/parent">
@@ -1420,9 +1559,8 @@ export default function App() {
                                         className="group flex flex-col items-center justify-start text-center cursor-pointer min-w-0 p-0.5"
                                         title={isEditModeActive ? `编辑: ${ext.name}` : `${ext.name}\n${ext.description}\n\n点击立即跳转: ${ext.url}`}
                                       >
-                                        {/* Circular/Squirclish App Icon Frame with strict dimensions */}
                                         <motion.div
-                                          className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 ${isEditModeActive ? 'transition-none' : 'transition-all duration-300'} flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover}`}
+                                          className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 dark:from-zinc-900 dark:to-zinc-950 border border-slate-200/80 dark:border-zinc-800 ${isEditModeActive ? 'transition-none' : 'transition-all duration-300'} flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover}`}
                                           animate={isEditModeActive ? {
                                             rotate: idx % 2 === 0 ? [-1.2, 1.2, -1.2] : [1.2, -1.2, 1.2],
                                             y: idx % 2 === 0 ? [-0.6, 0.6, -0.6] : [0.6, -0.6, 0.6],
@@ -1463,7 +1601,7 @@ export default function App() {
                                         </motion.div>
 
                                         {/* Text label underneath */}
-                                        <span className={`text-[11px] text-slate-500 font-bold mt-2 tracking-tight truncate max-w-full leading-tight transition-colors duration-300 ${activeTextColor}`}>
+                                        <span className={`text-[11px] text-slate-500 dark:text-zinc-400 font-bold mt-2 tracking-tight truncate max-w-full leading-tight transition-colors duration-300 ${activeTextColor}`}>
                                           {ext.name}
                                         </span>
                                       </a>
@@ -1482,8 +1620,8 @@ export default function App() {
                           {services.map(srv => {
                             const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
                             const activeBgHover = routePreference === 'tailscale'
-                              ? 'hover:border-emerald-400/60 hover:bg-emerald-50/10 hover:shadow-emerald-100/20'
-                              : 'hover:border-indigo-400/60 hover:bg-indigo-50/10 hover:shadow-indigo-100/20';
+                              ? 'hover:border-emerald-400/60 hover:bg-emerald-50/10 dark:hover:bg-emerald-950/20 hover:shadow-emerald-100/20'
+                              : 'hover:border-indigo-400/60 hover:bg-indigo-50/10 dark:hover:bg-indigo-950/20 hover:shadow-indigo-100/20';
                             const pulseDotColor = routePreference === 'tailscale'
                               ? 'bg-emerald-500'
                               : 'bg-indigo-500';
@@ -1495,7 +1633,7 @@ export default function App() {
                                 href={activeUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`group relative border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
+                                className={`group relative border border-slate-200/80 dark:border-zinc-800/85 bg-gradient-to-br from-white to-slate-50/30 dark:from-zinc-900 dark:to-zinc-900/10 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
                                 title={`点击快捷跳转：${activeUrl}`}
                               >
                                 {/* Subtle side glow indicator matching active route preference */}
@@ -1505,21 +1643,21 @@ export default function App() {
 
                                 <div className="flex items-start gap-3.5 min-w-0">
                                   {/* Richer app icon frame with matching color feedback on group hover */}
-                                  <div className={`p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0 ${
+                                  <div className={`p-3 bg-slate-50 dark:bg-zinc-800/80 border border-slate-100 dark:border-zinc-700/60 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0 ${
                                     routePreference === 'tailscale'
-                                      ? 'group-hover:bg-emerald-50/55 group-hover:border-emerald-200'
-                                      : 'group-hover:bg-indigo-50/55 group-hover:border-indigo-200'
+                                      ? 'group-hover:bg-emerald-50/55 dark:group-hover:bg-emerald-950/60 group-hover:border-emerald-200 dark:group-hover:border-emerald-800/70'
+                                      : 'group-hover:bg-indigo-50/55 dark:group-hover:bg-indigo-950/60 group-hover:border-indigo-200 dark:group-hover:border-indigo-800/70'
                                   }`}>
                                     {getServiceIcon(srv.icon)}
                                   </div>
 
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-1.5">
-                                      <h4 className="font-bold text-slate-800 text-xs sm:text-sm tracking-tight leading-snug group-hover:text-slate-900 transition-colors">
+                                      <h4 className="font-bold text-slate-800 dark:text-zinc-100 text-xs sm:text-sm tracking-tight leading-snug group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                                         {srv.name}
                                       </h4>
                                     </div>
-                                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 leading-normal">
+                                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-1 mt-1 leading-normal">
                                       {srv.description}
                                     </p>
 
@@ -1528,8 +1666,8 @@ export default function App() {
                                       <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>
                                       <span className={`text-[10px] font-mono truncate max-w-[200px] transition-colors duration-300 ${
                                         routePreference === 'tailscale' 
-                                          ? 'text-emerald-600 font-medium' 
-                                          : 'text-indigo-600 font-medium'
+                                          ? 'text-emerald-600 dark:text-emerald-400 font-medium' 
+                                          : 'text-indigo-600 dark:text-indigo-400 font-medium'
                                       }`}>
                                         {routePreference === 'tailscale' ? 'TS 专网 ' : '物理内网 '}: {activeUrl.replace(/^https?:\/\//i, '')}
                                       </span>
@@ -1540,8 +1678,8 @@ export default function App() {
                                 {/* Action arrow with dynamic route preference colors */}
                                 <div className={`p-2 rounded-lg transition duration-150 shrink-0 ${
                                   routePreference === 'tailscale'
-                                    ? 'text-slate-400 bg-slate-50/60 group-hover:text-emerald-700 group-hover:bg-emerald-100/60'
-                                    : 'text-slate-400 bg-slate-50/60 group-hover:text-indigo-700 group-hover:bg-indigo-100/60'
+                                    ? 'text-slate-400 dark:text-zinc-400 bg-slate-50/60 dark:bg-zinc-800/80 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 group-hover:bg-emerald-100/60 dark:group-hover:bg-emerald-950/40'
+                                    : 'text-slate-400 dark:text-zinc-400 bg-slate-50/60 dark:bg-zinc-800/80 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 group-hover:bg-indigo-100/60 dark:group-hover:bg-indigo-950/40'
                                 }`}>
                                   <ArrowUpRight className="w-4 h-4" />
                                 </div>
@@ -1551,31 +1689,31 @@ export default function App() {
                         </div>
 
                         {/* Collapsible Widget: 外部快捷通道 */}
-                        <div className="border border-slate-200/70 bg-slate-50/45 hover:bg-slate-50/80 rounded-xl p-3.5 transition-all">
+                        <div className="border border-slate-200/70 dark:border-zinc-800 bg-slate-50/45 dark:bg-zinc-900/30 hover:bg-slate-50/80 dark:hover:bg-zinc-900/55 rounded-xl p-3.5 transition-all">
                           <div className="w-full flex items-center justify-between text-left">
                             <button
                               type="button"
                               onClick={toggleExternalShortcutExpanded}
                               className="flex items-center gap-2.5 min-w-0 flex-1 focus:outline-hidden cursor-pointer text-left"
                             >
-                              <div className="p-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-lg shrink-0 flex items-center justify-center">
+                              <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 text-indigo-600 dark:text-indigo-400 rounded-lg shrink-0 flex items-center justify-center">
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </div>
                               <div className="min-w-0 flex flex-col justify-center">
-                                <span className="text-xs font-extrabold text-slate-800 tracking-tight leading-none">外部快捷通道</span>
-                                <span className="text-[10px] text-slate-400 mt-1 leading-none">一键直达公共学术及辅助工具项目</span>
+                                <span className="text-xs font-extrabold text-slate-800 dark:text-zinc-200 tracking-tight leading-none">外部快捷通道</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 leading-none">一键直达公共学术及辅助工具项目</span>
                               </div>
                             </button>
  
                             <div className="flex items-center gap-2 shrink-0 select-none">
-                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-sm">
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-sm">
                                 {externalLinks.length} 个工具
                               </span>
                               {externalLinks.length !== DEFAULT_EXTERNAL_LINKS.length && (
                                 <button
                                   type="button"
                                   onClick={handleResetExternalLinks}
-                                  className="text-[10px] font-extrabold text-slate-400 hover:text-indigo-600 transition cursor-pointer px-1 py-0.5"
+                                  className="text-[10px] font-extrabold text-slate-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer px-1 py-0.5"
                                   title="重置自定义外部链接"
                                 >
                                   重置
@@ -1589,7 +1727,7 @@ export default function App() {
                                     setIsExternalShortcutExpanded(true);
                                   }
                                 }}
-                                className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-200/80'}`}
+                                className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400' : 'text-slate-400 dark:text-zinc-400 hover:text-indigo-600 hover:bg-slate-200/80 dark:hover:bg-zinc-800'}`}
                                 title={isEditModeActive ? "退出编辑与删除模式" : "进入编辑与删除模式"}
                               >
                                 <SquarePen className="w-3.5 h-3.5" />
@@ -1603,7 +1741,7 @@ export default function App() {
                                   setNewLinkUrl('');
                                   setNewLinkDesc('');
                                 }}
-                                className="p-1 hover:bg-slate-200/80 rounded-md transition text-slate-400 hover:text-indigo-600 focus:outline-hidden cursor-pointer flex items-center justify-center placeholder-gray-400"
+                                className="p-1 hover:bg-slate-200/80 dark:hover:bg-zinc-800 rounded-md transition text-slate-400 dark:text-zinc-400 hover:text-indigo-600 focus:outline-hidden cursor-pointer flex items-center justify-center placeholder-gray-400"
                                 title={isAddingLink ? "收起面板" : "添加自定义工具链接"}
                               >
                                 <Plus className="w-3.5 h-3.5" />
@@ -1611,7 +1749,7 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={toggleExternalShortcutExpanded}
-                                className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                className="p-1 text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
                               >
                                 {isExternalShortcutExpanded ? (
                                   <ChevronUp className="w-4 h-4" />
@@ -1630,17 +1768,17 @@ export default function App() {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
                                 exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                className="overflow-hidden bg-white/70 border border-slate-200/50 rounded-xl p-3 flex flex-col gap-2 text-left"
+                                className="overflow-hidden bg-white/70 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/80 rounded-xl p-3 flex flex-col gap-2 text-left transition-colors duration-200"
                               >
-                                <div className="flex items-center justify-between border-b border-slate-200/40 pb-1.5 border-dashed">
-                                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                                <div className="flex items-center justify-between border-b border-slate-200/40 dark:border-slate-800 pb-1.5 border-dashed">
+                                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                                     {editingLinkId ? <SquarePen className="w-3.5 h-3.5 text-indigo-500" /> : <Plus className="w-3.5 h-3.5 text-indigo-500" />}
                                     <span>{editingLinkId ? "编辑外部常用快捷链接" : "新增外部常用快捷链接"}</span>
                                   </span>
                                   <button
                                     type="button"
                                     onClick={handleCancelEdit}
-                                    className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
                                   >
                                     <X className="w-3.5 h-3.5" />
                                   </button>
@@ -1654,7 +1792,7 @@ export default function App() {
                                       placeholder="名称，如: 百度学术"
                                       value={newLinkName}
                                       onChange={(e) => setNewLinkName(e.target.value)}
-                                      className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                      className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-slate-800 dark:text-slate-100 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
                                     />
                                   </div>
                                   <div className="flex flex-col gap-1">
@@ -1664,7 +1802,7 @@ export default function App() {
                                       placeholder="网址，如: baidu.com"
                                       value={newLinkUrl}
                                       onChange={(e) => setNewLinkUrl(e.target.value)}
-                                      className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-mono focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                      className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-slate-800 dark:text-slate-100 font-mono focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
                                     />
                                   </div>
                                 </div>
@@ -1675,42 +1813,42 @@ export default function App() {
                                     placeholder="简要说明或备注用途..."
                                     value={newLinkDesc}
                                     onChange={(e) => setNewLinkDesc(e.target.value)}
-                                    className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-slate-800 dark:text-slate-100 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
                                   />
                                 </div>
 
-                                <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/40 border-dashed">
+                                <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/40 dark:border-slate-800 border-dashed">
                                   <label className="flex items-center gap-1.5 cursor-pointer select-none">
                                     <input
                                       type="checkbox"
                                       checked={newLinkUseFavicon}
                                       onChange={(e) => setNewLinkUseFavicon(e.target.checked)}
-                                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
+                                      className="rounded border-slate-300 dark:border-slate-750 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
                                     />
-                                    <span className="text-[10px] font-medium text-slate-600">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
+                                    <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
                                   </label>
                                   
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[10px] font-bold text-slate-500 shrink-0">生成图标文字:</span>
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 shrink-0">生成图标文字:</span>
                                     <input
                                       type="text"
                                       maxLength={4}
                                       placeholder="默认切前1-2字"
                                       value={newLinkIconText}
                                       onChange={(e) => setNewLinkIconText(e.target.value)}
-                                      className="flex-1 text-[11px] px-2 py-0.5 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium placeholder:text-slate-400"
+                                      className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
                                       title="当未启用或无法抓取 Favicon 时，生成图标内显示的 1-4 位自定义字符"
                                     />
                                   </div>
                                 </div>
  
-                                <div className="flex items-center justify-between gap-1.5 p-1 bg-white border border-slate-100 rounded-lg">
+                                <div className="flex items-center justify-between gap-1.5 p-1 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg">
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    <span className="text-[10px] font-medium text-slate-500 truncate border-none">自动匹配图标:</span>
-                                    <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate border-none">自动匹配图标:</span>
+                                    <div className="w-6 h-6 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
                                       <ExternalFavicon url={newLinkUrl} name={newLinkName || '新'} size="sm" useFavicon={newLinkUseFavicon} iconText={newLinkIconText} />
                                     </div>
-                                    <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 px-1 py-0.5 rounded-sm truncate">
+                                    <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">
                                       {autoAssignIcon(newLinkUrl, newLinkName)}
                                     </span>
                                   </div>
@@ -1742,18 +1880,18 @@ export default function App() {
                                         target={isEditModeActive ? undefined : "_blank"}
                                         rel="noopener noreferrer"
                                         onClick={isEditModeActive ? (e) => { e.preventDefault(); handleStartEditExternalLink(ext); } : undefined}
-                                        className={`group/ext flex items-center gap-2.5 p-2.5 bg-white hover:bg-slate-50 border border-slate-200/60 hover:border-indigo-300 rounded-xl transition-all duration-200 cursor-pointer text-left min-w-0 ${isEditModeActive ? 'pr-20' : ''}`}
+                                        className={`group/ext flex items-center gap-2.5 p-2.5 bg-white dark:bg-zinc-900/50 hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-500 rounded-xl transition-all duration-200 cursor-pointer text-left min-w-0 ${isEditModeActive ? 'pr-20' : ''}`}
                                         title={isEditModeActive ? `编辑: ${ext.name}` : `点击跳转至: ${ext.url}\n${ext.description}`}
                                       >
-                                        <div className="p-1.5 bg-slate-50 border border-slate-100 rounded-lg group-hover/ext:bg-indigo-50/55 group-hover/ext:border-indigo-100 transition-colors flex items-center justify-center shrink-0">
+                                        <div className="p-1.5 bg-slate-50 dark:bg-zinc-800/85 border border-slate-100 dark:border-zinc-700/65 rounded-lg group-hover/ext:bg-indigo-50/55 dark:group-hover:bg-indigo-950/40 group-hover/ext:border-indigo-100 dark:group-hover:border-indigo-800 transition-colors flex items-center justify-center shrink-0">
                                           <ExternalFavicon url={ext.url} name={ext.name} size="md" useFavicon={ext.useFavicon !== false} iconText={ext.iconText} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                          <div className="text-xs font-bold text-slate-800 group-hover/ext:text-indigo-600 transition-colors tracking-tight flex items-center gap-0.5">
+                                          <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover/ext:text-indigo-600 dark:group-hover/ext:text-indigo-400 transition-colors tracking-tight flex items-center gap-0.5">
                                             <span className="truncate">{ext.name}</span>
                                             {!isEditModeActive && <ArrowUpRight className="w-3 h-3 text-slate-400 opacity-0 group-hover/ext:opacity-100 transition-opacity shrink-0" />}
                                           </div>
-                                          <p className="text-[10px] text-slate-400 truncate leading-tight mt-0.5">{ext.description}</p>
+                                          <p className="text-[10px] text-slate-400 dark:text-zinc-500 truncate leading-tight mt-0.5">{ext.description}</p>
                                         </div>
                                       </a>
  
@@ -1799,7 +1937,7 @@ export default function App() {
                 </AnimatePresence>
 
                 {/* 地址转换回到内网专区底部 */}
-                <div className="mt-5 pt-4 border-t border-slate-100/80">
+                <div className="mt-5 pt-4 border-t border-slate-100/80 dark:border-zinc-800">
                   <DualRouteConverter isCompact={intranetViewMode === 'icons'} />
                 </div>
               </div>
@@ -1813,14 +1951,14 @@ export default function App() {
 
 
       {/* ================================= FOOTER ================================= */}
-      <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 text-center text-slate-400 text-xs">
-        <div className="border-t border-slate-200 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="font-mono">
+      <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 text-center text-slate-400 dark:text-zinc-500 text-xs">
+        <div className="border-t border-slate-200 dark:border-zinc-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="font-mono text-slate-400 dark:text-zinc-500">
             © 2026 NNL Group Lab | nnlgroupdmu
           </p>
           <div className="flex gap-4">
             {/* <span className="text-[11px] text-slate-400">网络架构: 局域寻址网 & Tailscale Overlay 零信任接入</span> */}
-            <span className="text-[11px] text-slate-400">版本: v3.3.2-Build</span>
+            <span className="text-[11px] text-slate-400 dark:text-zinc-500">版本: v3.3.2-Build</span>
           </div>
         </div>
       </footer>
