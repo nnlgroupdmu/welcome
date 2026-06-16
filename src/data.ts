@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { NavItem, ServiceAsset, MemoPost } from './types';
+import { NavItem, ServiceAsset, MemoPost, ExternalLinkAsset } from './types';
 
 const baseUrl = (import.meta as any).env?.BASE_URL || '/';
 
@@ -89,9 +89,49 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
   }
 ];
 
+export const DEFAULT_EXTERNAL_LINKS: ExternalLinkAsset[] = [
+  {
+    id: 'ext-1',
+    name: '海大邮箱',
+    description: '学校的官方邮箱服务，可用于学生认证。',
+    icon: 'Mail',
+    url: 'https://webmail.dlmu.edu.cn/coremail/',
+    useFavicon: true,
+    iconText: '邮箱'
+  },
+  {
+    id: 'ext-2',
+    name: 'ChatGPT',
+    description: '学术翻译、写作优化与日常开发的 AI 智能助手。',
+    icon: 'Sparkles',
+    url: 'https://chatgpt.com',
+    useFavicon: true,
+    iconText: 'AI'
+  },
+  {
+    id: 'ext-3',
+    name: '学校研究生系统',
+    description: '选课、答辩等流程使用，研究生事务的官方系统。',
+    icon: 'Package',
+    url: 'https://yjs.dlmu.edu.cn/gsapp/sys/yjsemaphome/portal/index.do',
+    useFavicon: false,
+    iconText: '研'
+  },
+  {
+    id: 'ext-4',
+    name: 'Overleaf',
+    description: '多人学术论文协作与 LaTeX 实时在线编译平台。',
+    icon: 'FileText',
+    url: 'https://www.overleaf.com',
+    useFavicon: true,
+    iconText: '学术'
+  }
+];
+
 export const DEFAULT_MEMOS: MemoPost[] = [
   {
     id: 'memo-1',
+    rawId: 'memo-1-raw', // 示例原始 ID
     author: 'ADMIN',
     avatarSeed: 'A',
     content: '🎉 欢迎来到 NNL Group Lab 的全新门户网站！请接入内网后浏览笔记动态~',

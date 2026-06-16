@@ -22,6 +22,16 @@ export interface ServiceAsset {
   status: 'online' | 'offline' | 'maintenance';
 }
 
+export interface ExternalLinkAsset {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  url: string;
+  useFavicon?: boolean;
+  iconText?: string;
+}
+
 export interface MemoPost {
   id: string;
   rawId?: string; // Optional: raw ID from the Memos container API

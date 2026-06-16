@@ -12,6 +12,8 @@ import {
   Terminal,
   Cpu,
   Layers,
+  LayoutGrid,
+  List,
   Search,
   Plus,
   X,
@@ -42,16 +44,19 @@ import {
   Wrench,
   GitBranch,
   Gauge,
-  ArrowUp
+  ArrowUp,
+  SquarePen,
+  Globe
 } from 'lucide-react';
-import { NavItem, ServiceAsset, MemoPost } from './types';
-import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS } from './data';
+import { NavItem, ServiceAsset, MemoPost, ExternalLinkAsset } from './types';
+import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS, DEFAULT_EXTERNAL_LINKS } from './data';
 
 import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入公告
 import DualRouteConverter from './components/DualRouteConverter'; // 🌟 引入双路地址智能转换小工具
 import MemoContent from './components/MemoContent'; // 🌟 引入自适应内容折叠与高精测量组件
 import Markdown from 'react-markdown';
 import { GpuMonitor } from './components/GpuMonitor';
+import { ExternalFavicon } from './components/ExternalFavicon';
 
 
 export default function App() {
@@ -72,6 +77,17 @@ export default function App() {
       if (cached) return JSON.parse(cached);
     }
     return DEFAULT_SERVICES;
+  });
+  const [externalLinks, setExternalLinks] = useState<ExternalLinkAsset[]>(() => {
+    const cached = localStorage.getItem('seal_external_links');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return DEFAULT_EXTERNAL_LINKS;
   });
   const [memos, setMemos] = useState<MemoPost[]>(() => {
     if (ENABLE_CACHE) {
@@ -106,6 +122,127 @@ export default function App() {
 
   // User Route Preference for internal service cards
   const [routePreference, setRoutePreference] = useState<'tailscale' | 'lan'>('tailscale');
+
+  // Intranet Application View mode ('list' vs 'icons' with localStorage persistence)
+  const [intranetViewMode, setIntranetViewMode] = useState<'list' | 'icons'>(() => {
+    const cached = localStorage.getItem('seal_intranet_view_mode');
+    return (cached as 'list' | 'icons') || 'list';
+  });
+
+  const handleIntranetViewModeChange = (mode: 'list' | 'icons') => {
+    setIntranetViewMode(mode);
+    localStorage.setItem('seal_intranet_view_mode', mode);
+  };
+
+  // State to manage collapisble external shortcuts widget in list mode
+  const [isExternalShortcutExpanded, setIsExternalShortcutExpanded] = useState<boolean>(() => {
+    const cached = localStorage.getItem('seal_external_shortcut_expanded');
+    return cached === null ? true : cached === 'true';
+  });
+
+  const toggleExternalShortcutExpanded = () => {
+    setIsExternalShortcutExpanded(prev => {
+      const newVal = !prev;
+      localStorage.setItem('seal_external_shortcut_expanded', String(newVal));
+      return newVal;
+    });
+  };
+
+  // States & handers for user customizing/uploading external shortcut links
+  const [newLinkUseFavicon, setNewLinkUseFavicon] = useState<boolean>(true);
+  const [newLinkIconText, setNewLinkIconText] = useState<string>('');
+
+  const [isEditModeActive, setIsEditModeActive] = useState<boolean>(false);
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [isAddingLink, setIsAddingLink] = useState<boolean>(false);
+  const [newLinkName, setNewLinkName] = useState<string>('');
+  const [newLinkUrl, setNewLinkUrl] = useState<string>('');
+  const [newLinkDesc, setNewLinkDesc] = useState<string>('');
+
+  const handleSaveOrUpdateExternalLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLinkName.trim() || !newLinkUrl.trim()) return;
+
+    // Smart auto assign icon
+    const assignedIcon = autoAssignIcon(newLinkUrl.trim(), newLinkName.trim());
+    const finalUrl = newLinkUrl.trim().startsWith('http') ? newLinkUrl.trim() : `https://${newLinkUrl.trim()}`;
+
+    if (editingLinkId) {
+      // Update Mode
+      setExternalLinks(prev => prev.map(item => {
+        if (item.id === editingLinkId) {
+          return {
+            ...item,
+            name: newLinkName.trim(),
+            description: newLinkDesc.trim() || '自定义外部快捷访问项目。',
+            icon: assignedIcon,
+            url: finalUrl,
+            useFavicon: newLinkUseFavicon,
+            iconText: newLinkIconText.trim() || undefined
+          };
+        }
+        return item;
+      }));
+      setEditingLinkId(null);
+    } else {
+      // Create Mode
+      const newLink: ExternalLinkAsset = {
+        id: `ext-${Date.now()}`,
+        name: newLinkName.trim(),
+        description: newLinkDesc.trim() || '自定义外部快捷访问项目。',
+        icon: assignedIcon,
+        url: finalUrl,
+        useFavicon: newLinkUseFavicon,
+        iconText: newLinkIconText.trim() || undefined
+      };
+      setExternalLinks(prev => [...prev, newLink]);
+    }
+
+    setNewLinkName('');
+    setNewLinkUrl('');
+    setNewLinkDesc('');
+    setNewLinkUseFavicon(true);
+    setNewLinkIconText('');
+    setIsAddingLink(false);
+  };
+
+  const handleStartEditExternalLink = (ext: ExternalLinkAsset) => {
+    setEditingLinkId(ext.id);
+    setNewLinkName(ext.name);
+    setNewLinkUrl(ext.url);
+    setNewLinkDesc(ext.description);
+    setNewLinkUseFavicon(ext.useFavicon !== false);
+    setNewLinkIconText(ext.iconText || '');
+    setIsAddingLink(true); // Open the input panel
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLinkId(null);
+    setNewLinkName('');
+    setNewLinkUrl('');
+    setNewLinkDesc('');
+    setNewLinkUseFavicon(true);
+    setNewLinkIconText('');
+    setIsAddingLink(false);
+  };
+
+  const handleDeleteExternalLink = (id: string, name: string) => {
+    if (window.confirm(`确定要移除外部链接 "${name}" 吗？`)) {
+      setExternalLinks(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+  const handleResetExternalLinks = () => {
+    if (window.confirm('确定要重置外部链接至大连海事大学默认列表吗？')) {
+      setExternalLinks(DEFAULT_EXTERNAL_LINKS);
+    }
+  };
+
+  // Automatically exit edit mode on switching views, categories, search queries, tags or route preference
+  useEffect(() => {
+    setIsEditModeActive(false);
+    handleCancelEdit();
+  }, [activeCategory, searchQuery, selectedTag, intranetViewMode, routePreference, isExternalShortcutExpanded]);
 
   // Track if user has manually switched the network route preference
   const [hasManuallySwitched, setHasManuallySwitched] = useState<boolean>(false);
@@ -326,6 +463,10 @@ export default function App() {
   }, [services, ENABLE_CACHE]);
 
   useEffect(() => {
+    localStorage.setItem('seal_external_links', JSON.stringify(externalLinks));
+  }, [externalLinks]);
+
+  useEffect(() => {
     if (ENABLE_CACHE) {
       localStorage.setItem('seal_memos', JSON.stringify(memos));
     }
@@ -349,6 +490,21 @@ export default function App() {
       default: return <BookOpen className="w-5 h-5 text-slate-500" />;
     }
   };
+  const autoAssignIcon = (url: string = '', name: string = ''): string => {
+    const combined = `${url.toLowerCase()} ${name.toLowerCase()}`;
+    if (combined.includes('github') || combined.includes('git')) return 'Github';
+    if (combined.includes('mail') || combined.includes('email') || combined.includes('coremail') || combined.includes('post') || combined.includes('@') || combined.includes('letter')) return 'Mail';
+    if (combined.includes('chat') || combined.includes('gpt') || combined.includes('ai') || combined.includes('spark') || combined.includes('model') || combined.includes('huggingface') || combined.includes('hf')) return 'Sparkles';
+    if (combined.includes('yjs') || combined.includes('graduate') || combined.includes('study') || combined.includes('sys') || combined.includes('class') || combined.includes('course') || combined.includes('edu') || combined.includes('university') || combined.includes('school')) return 'Package';
+    if (combined.includes('overleaf') || combined.includes('latex') || combined.includes('doc') || combined.includes('paper') || combined.includes('write') || combined.includes('pdf') || combined.includes('text') || combined.includes('book')) return 'FileText';
+    if (combined.includes('code') || combined.includes('dev') || combined.includes('build') || combined.includes('program') || combined.includes('compile') || combined.includes('ide')) return 'Code';
+    if (combined.includes('gauge') || combined.includes('monitor') || combined.includes('status') || combined.includes('dashboard') || combined.includes('grafana') || combined.includes('metrics')) return 'Gauge';
+    if (combined.includes('folder') || combined.includes('drive') || combined.includes('cloud') || combined.includes('box') || combined.includes('pan') || combined.includes('nas')) return 'FolderClosed';
+    if (combined.includes('cpu') || combined.includes('gpu') || combined.includes('hardware') || combined.includes('server')) return 'Cpu';
+    if (combined.includes('note') || combined.includes('memo') || combined.includes('diary') || combined.includes('todo')) return 'StickyNote';
+    return 'ExternalLink';
+  };
+
   const getServiceIcon = (iconName: string) => {
     switch (iconName) {
       case 'StickyNote': return <StickyNote className="w-7 h-7 text-emerald-600" />;
@@ -358,6 +514,12 @@ export default function App() {
       case 'Layers': return <Layers className="w-7 h-7 text-purple-600" />;
       case 'GitBranch': return <GitBranch className="w-7 h-7 text-rose-600" />;
       case 'Gauge': return <Gauge className="w-7 h-7 text-yellow-500" />;
+      case 'Github': return <Github className="w-7 h-7 text-slate-700" />;
+      case 'Mail': return <Mail className="w-7 h-7 text-sky-500" />;
+      case 'Sparkles': return <Sparkles className="w-7 h-7 text-violet-500" />;
+      case 'Package': return <Package className="w-7 h-7 text-amber-600" />;
+      case 'FileText': return <FileText className="w-7 h-7 text-emerald-600" />;
+      case 'ExternalLink': return <ExternalLink className="w-7 h-7 text-teal-600" />;
       default: return <Activity className="w-7 h-7 text-teal-600" />;
     }
   };
@@ -946,15 +1108,43 @@ export default function App() {
             {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) ----------------- */}
             <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 rounded-2xl border border-slate-200/60 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none shrink-0">
               <div>
-                <div className="flex items-center justify-between mb-5 pb-2.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2.5">
-                    <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
+                <div className="flex items-start justify-between mb-5 pb-2.5 border-b border-slate-100 gap-4">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg shrink-0">
                       <Layers className="w-5 h-5" />
                     </span>
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="font-bold text-slate-900 text-base">内网专区</h3>
-                      <p className="text-xs text-slate-400">切换内网类型开关，将自动改变站内跳转连接，一键跳转工具组件。</p>
+                      <p className="text-xs text-slate-400 truncate md:whitespace-normal">切换内网类型开关，将自动改变站内跳转连接，一键跳转工具组件。</p>
                     </div>
+                  </div>
+
+                  {/* Mode switch helper buttons */}
+                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/50 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleIntranetViewModeChange('list')}
+                      className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                        intranetViewMode === 'list'
+                          ? 'bg-white text-slate-800 shadow-xs font-semibold'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                      title="列表视图"
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleIntranetViewModeChange('icons')}
+                      className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                        intranetViewMode === 'icons'
+                          ? 'bg-white text-slate-800 shadow-xs font-semibold'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                      title="紧凑图标视图"
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
@@ -1000,82 +1190,617 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* iOS/SaaS App Launcher Style Grid with Modern Shadow Lift */}
-                <div id="digital-assets-app-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
-                  {services.map(srv => {
-                    const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
-                    const activeBgHover = routePreference === 'tailscale'
-                      ? 'hover:border-emerald-400/60 hover:bg-emerald-50/10 hover:shadow-emerald-100/20'
-                      : 'hover:border-indigo-400/60 hover:bg-indigo-50/10 hover:shadow-indigo-100/20';
-                    const pulseDotColor = routePreference === 'tailscale'
-                      ? 'bg-emerald-500'
-                      : 'bg-indigo-500';
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={intranetViewMode}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {intranetViewMode === 'icons' ? (
+                      /* Compact App Launcher Partitioned Grid */
+                      <div className="flex flex-col gap-2.5">
+                        {/* Intranet Services Grid */}
+                        <div id="digital-assets-app-grid-icons" className="grid grid-cols-4 gap-y-3 gap-x-3 pt-1.5 pb-0.5">
+                          {services.map(srv => {
+                            const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
+                            const activeBgHover = routePreference === 'tailscale'
+                              ? 'group-hover:border-emerald-400/80 group-hover:bg-emerald-50/15 group-hover:shadow-emerald-100/20'
+                              : 'group-hover:border-indigo-400/80 group-hover:bg-indigo-50/15 group-hover:shadow-indigo-100/20';
+                            const activeTextColor = routePreference === 'tailscale' ? 'group-hover:text-emerald-600' : 'group-hover:text-indigo-600';
 
-                    return (
-                      <a
-                        id={`service-card-${srv.id}`}
-                        key={srv.id}
-                        href={activeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`group relative border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
-                        title={`点击快捷跳转：${activeUrl}`}
-                      >
-                        {/* Subtle side glow indicator matching active route preference */}
-                        <div className={`absolute left-0 top-3 bottom-3 w-[2.5px] rounded-r scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 ${
-                          routePreference === 'tailscale' ? 'bg-emerald-500' : 'bg-indigo-500'
-                        }`} />
+                            return (
+                              <a
+                                id={`service-icon-card-${srv.id}`}
+                                key={srv.id}
+                                href={activeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex flex-col items-center justify-start text-center cursor-pointer min-w-0 p-0.5"
+                                title={`${srv.name}\n${srv.description}\n\n点击立即跳转: ${activeUrl}`}
+                              >
+                                {/* Circular/Squirclish App Icon Frame with strict dimensions */}
+                                <div className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 transition-all duration-300 flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover}`}>
+                                  {/* Inner Icon */}
+                                  <div className="transition-transform duration-300 group-hover:scale-110 flex items-center justify-center [&_svg]:w-7 [&_svg]:h-7 [&_img]:w-7 [&_img]:h-7">
+                                    {getServiceIcon(srv.icon)}
+                                  </div>
+                                </div>
 
-                        <div className="flex items-start gap-3.5 min-w-0">
-                          {/* Richer app icon frame with matching color feedback on group hover */}
-                          <div className={`p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0 ${
-                            routePreference === 'tailscale'
-                              ? 'group-hover:bg-emerald-50/55 group-hover:border-emerald-200'
-                              : 'group-hover:bg-indigo-50/55 group-hover:border-indigo-200'
-                          }`}>
-                            {getServiceIcon(srv.icon)}
+                                {/* Text label underneath */}
+                                <span className={`text-[11px] text-slate-500 font-bold mt-2 tracking-tight truncate max-w-full leading-tight transition-colors duration-300 ${activeTextColor}`}>
+                                  {srv.name.replace(' Memos', '').replace('轻笔记动态广场', '').replace('代码托管平台', '').replace('镜像打包', '').split(' ')[0]}
+                                </span>
+                              </a>
+                            );
+                          })}
+                        </div>
+
+                        {/* Subtle Divider between Intranet Services and External Tools */}
+                        <div className="flex items-center justify-between mt-1 mb-0.5 px-1 select-none">
+                          <button
+                            type="button"
+                            onClick={toggleExternalShortcutExpanded}
+                            className="flex items-center gap-1 hover:text-indigo-600 transition-colors cursor-pointer text-left focus:outline-hidden"
+                          >
+                            <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExternalShortcutExpanded ? 'rotate-90' : ''}`} />
+                            <span className="text-[10px] font-extrabold text-slate-400/95 tracking-wide uppercase shrink-0 cursor-pointer">外部工具</span>
+                          </button>
+                          
+                          <div className="flex items-center gap-2 shrink-0">
+                            {externalLinks.length !== DEFAULT_EXTERNAL_LINKS.length && (
+                              <button
+                                type="button"
+                                onClick={handleResetExternalLinks}
+                                className="text-[10px] font-medium text-slate-400 hover:text-indigo-600 transition cursor-pointer px-1"
+                                title="重置外部快捷链接至学校默认"
+                              >
+                                重置
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsEditModeActive(!isEditModeActive);
+                                if (!isEditModeActive) {
+                                  setIsExternalShortcutExpanded(true);
+                                }
+                              }}
+                              className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'}`}
+                              title={isEditModeActive ? "退出编辑与删除模式" : "进入编辑与删除模式"}
+                            >
+                              <SquarePen className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsAddingLink(!isAddingLink);
+                                setEditingLinkId(null);
+                                setNewLinkName('');
+                                setNewLinkUrl('');
+                                setNewLinkDesc('');
+                              }}
+                              className="p-1 hover:bg-slate-100 rounded-md transition text-slate-400 hover:text-indigo-600 focus:outline-hidden cursor-pointer"
+                              title={isAddingLink ? "收起面板" : "添加自定义工具链接"}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
                           </div>
+                        </div>
 
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <h4 className="font-bold text-slate-800 text-xs sm:text-sm tracking-tight leading-snug group-hover:text-slate-900 transition-colors">
-                                {srv.name}
-                              </h4>
-                            </div>
-                            <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 leading-normal">
-                              {srv.description}
-                            </p>
+                        {/* Dynamic Client Link Addition Panel */}
+                        <AnimatePresence>
+                          {isAddingLink && (
+                            <motion.form
+                              onSubmit={handleSaveOrUpdateExternalLink}
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto', marginBottom: 10 }}
+                              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                              className="overflow-hidden bg-slate-100/65 border border-slate-200/50 rounded-xl p-3 flex flex-col gap-2 my-1 text-left"
+                            >
+                              <div className="flex items-center justify-between border-b border-slate-200/40 pb-1.5">
+                                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                                  {editingLinkId ? <SquarePen className="w-3.5 h-3.5 text-indigo-500" /> : <Plus className="w-3.5 h-3.5 text-indigo-500" />}
+                                  <span>{editingLinkId ? "编辑外部常用链接" : "新增外部常用链接"}</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEdit}
+                                  className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
 
-                            {/* Selected route destination label with coordinated text colors */}
-                            <div className="mt-1.5 flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>
-                              <span className={`text-[10px] font-mono truncate max-w-[200px] transition-colors duration-300 ${
-                                routePreference === 'tailscale' 
-                                  ? 'text-emerald-600 font-medium' 
-                                  : 'text-indigo-600 font-medium'
-                              }`}>
-                                {routePreference === 'tailscale' ? 'TS 专网 ' : '物理内网 '}: {activeUrl.replace(/^https?:\/\//i, '')}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-[9px] font-bold text-slate-500">名称 *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="比如: 百度学术"
+                                    value={newLinkName}
+                                    onChange={(e) => setNewLinkName(e.target.value)}
+                                    className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-[9px] font-bold text-slate-500">网址 *</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="baidu.com"
+                                    value={newLinkUrl}
+                                    onChange={(e) => setNewLinkUrl(e.target.value)}
+                                    className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-mono"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[9px] font-bold text-slate-500">简短说明 (可选)</label>
+                                <input
+                                  type="text"
+                                  placeholder="对该外部快捷工具的描述..."
+                                  value={newLinkDesc}
+                                  onChange={(e) => setNewLinkDesc(e.target.value)}
+                                  className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium"
+                                />
+                              </div>
+
+                              <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/45 border-dashed">
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={newLinkUseFavicon}
+                                    onChange={(e) => setNewLinkUseFavicon(e.target.checked)}
+                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
+                                  />
+                                  <span className="text-[10px] font-medium text-slate-600">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
+                                </label>
+                                
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] font-bold text-slate-500 shrink-0">生成图标文字:</span>
+                                  <input
+                                    type="text"
+                                    maxLength={4}
+                                    placeholder="默认切前1-2字"
+                                    value={newLinkIconText}
+                                    onChange={(e) => setNewLinkIconText(e.target.value)}
+                                    className="flex-1 text-[11px] px-2 py-0.5 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium placeholder:text-slate-400"
+                                    title="当未启用或无法抓取 Favicon 时，生成图标内显示的 1-4 位自定义字符"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-1.5 mt-1 p-1 bg-white border border-slate-100 rounded-lg">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-[10px] font-medium text-slate-500 truncate shrink-0">图标自动匹配：</span>
+                                  <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                                    <ExternalFavicon url={newLinkUrl} name={newLinkName || '新'} size="sm" useFavicon={newLinkUseFavicon} iconText={newLinkIconText} />
+                                  </div>
+                                  <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 px-1 py-0.5 rounded-sm truncate">
+                                    {autoAssignIcon(newLinkUrl, newLinkName)}
+                                  </span>
+                                </div>
+                                <button
+                                  type="submit"
+                                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-md transition-all shadow-xs cursor-pointer shrink-0"
+                                >
+                                  {editingLinkId ? "保存修改" : "录入"}
+                                </button>
+                              </div>
+                            </motion.form>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Collapsible External Links Grid in Icons Mode */}
+                        <AnimatePresence initial={false}>
+                          {isExternalShortcutExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+                              animate={{ height: 'auto', opacity: 1, marginTop: 4, transitionEnd: { overflow: 'visible' } }}
+                              exit={{ height: 0, opacity: 0, marginTop: 0, overflow: 'hidden' }}
+                              transition={{ duration: 0.2, ease: "easeInOut" }}
+                            >
+                              <div id="external-tools-grid-icons" className="grid grid-cols-4 gap-y-3 gap-x-3 pt-2 pb-1.5 px-1.5">
+                                {externalLinks.map((ext, idx) => {
+                                  const activeBgHover = 'group-hover:border-indigo-400 group-hover:bg-indigo-50/15 group-hover:shadow-indigo-100/15';
+                                  const activeTextColor = 'group-hover:text-indigo-600';
+
+                                  return (
+                                    <div key={ext.id} className="relative group/parent">
+                                      <a
+                                        id={`external-icon-card-${ext.id}`}
+                                        href={isEditModeActive ? undefined : ext.url}
+                                        target={isEditModeActive ? undefined : "_blank"}
+                                        rel="noopener noreferrer"
+                                        onClick={isEditModeActive ? (e) => { e.preventDefault(); handleStartEditExternalLink(ext); } : undefined}
+                                        className="group flex flex-col items-center justify-start text-center cursor-pointer min-w-0 p-0.5"
+                                        title={isEditModeActive ? `编辑: ${ext.name}` : `${ext.name}\n${ext.description}\n\n点击立即跳转: ${ext.url}`}
+                                      >
+                                        {/* Circular/Squirclish App Icon Frame with strict dimensions */}
+                                        <motion.div
+                                          className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 border border-slate-200/80 ${isEditModeActive ? 'transition-none' : 'transition-all duration-300'} flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover}`}
+                                          animate={isEditModeActive ? {
+                                            rotate: idx % 2 === 0 ? [-1.2, 1.2, -1.2] : [1.2, -1.2, 1.2],
+                                            y: idx % 2 === 0 ? [-0.6, 0.6, -0.6] : [0.6, -0.6, 0.6],
+                                          } : { rotate: 0, y: 0 }}
+                                          transition={isEditModeActive ? {
+                                            duration: 0.18 + (idx % 3) * 0.04,
+                                            repeat: Infinity,
+                                            ease: "easeInOut"
+                                          } : { duration: 0.2 }}
+                                        >
+                                          {/* Inner Icon */}
+                                          <div className="transition-transform duration-300 group-hover:scale-110 flex items-center justify-center">
+                                            <ExternalFavicon url={ext.url} name={ext.name} size="lg" useFavicon={ext.useFavicon !== false} iconText={ext.iconText} />
+                                          </div>
+
+                                          {/* Edit Mode Overlay directly on the icon box */}
+                                          {isEditModeActive && (
+                                            <div className="absolute inset-0 bg-slate-900/40 rounded-[20px] backdrop-blur-[1px] flex items-center justify-center transition-opacity duration-200 z-10 animate-fade-in">
+                                              <SquarePen className="w-5.5 h-5.5 text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]" />
+                                            </div>
+                                          )}
+
+                                          {/* Phone-style Delete button overlay at TOP-RIGHT (右上角) of the icon square */}
+                                          {isEditModeActive && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleDeleteExternalLink(ext.id, ext.name);
+                                              }}
+                                              className="absolute -top-1.5 -right-1.5 w-5.5 h-5.5 bg-rose-500 hover:bg-rose-600 active:scale-90 text-white rounded-full flex items-center justify-center shadow-md cursor-pointer z-20 transition-all border border-white"
+                                              title={`删除 ${ext.name}`}
+                                            >
+                                              <X className="w-3.5 h-3.5 text-white font-bold" />
+                                            </button>
+                                          )}
+                                        </motion.div>
+
+                                        {/* Text label underneath */}
+                                        <span className={`text-[11px] text-slate-500 font-bold mt-2 tracking-tight truncate max-w-full leading-tight transition-colors duration-300 ${activeTextColor}`}>
+                                          {ext.name}
+                                        </span>
+                                      </a>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      /* Classic App Launcher List */
+                      <div className="flex flex-col gap-4">
+                        <div id="digital-assets-app-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
+                          {services.map(srv => {
+                            const activeUrl = routePreference === 'tailscale' ? srv.tailscaleUrl : srv.localUrl;
+                            const activeBgHover = routePreference === 'tailscale'
+                              ? 'hover:border-emerald-400/60 hover:bg-emerald-50/10 hover:shadow-emerald-100/20'
+                              : 'hover:border-indigo-400/60 hover:bg-indigo-50/10 hover:shadow-indigo-100/20';
+                            const pulseDotColor = routePreference === 'tailscale'
+                              ? 'bg-emerald-500'
+                              : 'bg-indigo-500';
+
+                            return (
+                              <a
+                                id={`service-card-${srv.id}`}
+                                key={srv.id}
+                                href={activeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`group relative border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm flex items-center justify-between gap-4 text-left cursor-pointer ${activeBgHover}`}
+                                title={`点击快捷跳转：${activeUrl}`}
+                              >
+                                {/* Subtle side glow indicator matching active route preference */}
+                                <div className={`absolute left-0 top-3 bottom-3 w-[2.5px] rounded-r scale-y-0 group-hover:scale-y-100 transition-transform origin-center duration-300 ${
+                                  routePreference === 'tailscale' ? 'bg-emerald-500' : 'bg-indigo-500'
+                                }`} />
+
+                                <div className="flex items-start gap-3.5 min-w-0">
+                                  {/* Richer app icon frame with matching color feedback on group hover */}
+                                  <div className={`p-3 bg-slate-50 border border-slate-100 group-hover:scale-105 rounded-xl transition-all flex items-center justify-center shrink-0 ${
+                                    routePreference === 'tailscale'
+                                      ? 'group-hover:bg-emerald-50/55 group-hover:border-emerald-200'
+                                      : 'group-hover:bg-indigo-50/55 group-hover:border-indigo-200'
+                                  }`}>
+                                    {getServiceIcon(srv.icon)}
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <h4 className="font-bold text-slate-800 text-xs sm:text-sm tracking-tight leading-snug group-hover:text-slate-900 transition-colors">
+                                        {srv.name}
+                                      </h4>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-1 leading-normal">
+                                      {srv.description}
+                                    </p>
+
+                                    {/* Selected route destination label with coordinated text colors */}
+                                    <div className="mt-1.5 flex items-center gap-1.5">
+                                      <span className={`w-1.5 h-1.5 rounded-full ${pulseDotColor} animate-pulse shrink-0`}></span>
+                                      <span className={`text-[10px] font-mono truncate max-w-[200px] transition-colors duration-300 ${
+                                        routePreference === 'tailscale' 
+                                          ? 'text-emerald-600 font-medium' 
+                                          : 'text-indigo-600 font-medium'
+                                      }`}>
+                                        {routePreference === 'tailscale' ? 'TS 专网 ' : '物理内网 '}: {activeUrl.replace(/^https?:\/\//i, '')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Action arrow with dynamic route preference colors */}
+                                <div className={`p-2 rounded-lg transition duration-150 shrink-0 ${
+                                  routePreference === 'tailscale'
+                                    ? 'text-slate-400 bg-slate-50/60 group-hover:text-emerald-700 group-hover:bg-emerald-100/60'
+                                    : 'text-slate-400 bg-slate-50/60 group-hover:text-indigo-700 group-hover:bg-indigo-100/60'
+                                }`}>
+                                  <ArrowUpRight className="w-4 h-4" />
+                                </div>
+                              </a>
+                            );
+                          })}
+                        </div>
+
+                        {/* Collapsible Widget: 外部快捷通道 */}
+                        <div className="border border-slate-200/70 bg-slate-50/45 hover:bg-slate-50/80 rounded-xl p-3.5 transition-all">
+                          <div className="w-full flex items-center justify-between text-left">
+                            <button
+                              type="button"
+                              onClick={toggleExternalShortcutExpanded}
+                              className="flex items-center gap-2.5 min-w-0 flex-1 focus:outline-hidden cursor-pointer text-left"
+                            >
+                              <div className="p-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-lg shrink-0 flex items-center justify-center">
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0 flex flex-col justify-center">
+                                <span className="text-xs font-extrabold text-slate-800 tracking-tight leading-none">外部快捷通道</span>
+                                <span className="text-[10px] text-slate-400 mt-1 leading-none">一键直达公共学术及辅助工具项目</span>
+                              </div>
+                            </button>
+ 
+                            <div className="flex items-center gap-2 shrink-0 select-none">
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-sm">
+                                {externalLinks.length} 个工具
                               </span>
+                              {externalLinks.length !== DEFAULT_EXTERNAL_LINKS.length && (
+                                <button
+                                  type="button"
+                                  onClick={handleResetExternalLinks}
+                                  className="text-[10px] font-extrabold text-slate-400 hover:text-indigo-600 transition cursor-pointer px-1 py-0.5"
+                                  title="重置自定义外部链接"
+                                >
+                                  重置
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsEditModeActive(!isEditModeActive);
+                                  if (!isEditModeActive) {
+                                    setIsExternalShortcutExpanded(true);
+                                  }
+                                }}
+                                className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-200/80'}`}
+                                title={isEditModeActive ? "退出编辑与删除模式" : "进入编辑与删除模式"}
+                              >
+                                <SquarePen className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingLink(!isAddingLink);
+                                  setEditingLinkId(null);
+                                  setNewLinkName('');
+                                  setNewLinkUrl('');
+                                  setNewLinkDesc('');
+                                }}
+                                className="p-1 hover:bg-slate-200/80 rounded-md transition text-slate-400 hover:text-indigo-600 focus:outline-hidden cursor-pointer flex items-center justify-center placeholder-gray-400"
+                                title={isAddingLink ? "收起面板" : "添加自定义工具链接"}
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={toggleExternalShortcutExpanded}
+                                className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                              >
+                                {isExternalShortcutExpanded ? (
+                                  <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4" />
+                                )}
+                              </button>
                             </div>
                           </div>
-                        </div>
+ 
+                          {/* Render dynamic addition form under list mode shortcuts as well */}
+                          <AnimatePresence>
+                            {isAddingLink && (
+                              <motion.form
+                                onSubmit={handleSaveOrUpdateExternalLink}
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                className="overflow-hidden bg-white/70 border border-slate-200/50 rounded-xl p-3 flex flex-col gap-2 text-left"
+                              >
+                                <div className="flex items-center justify-between border-b border-slate-200/40 pb-1.5 border-dashed">
+                                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                                    {editingLinkId ? <SquarePen className="w-3.5 h-3.5 text-indigo-500" /> : <Plus className="w-3.5 h-3.5 text-indigo-500" />}
+                                    <span>{editingLinkId ? "编辑外部常用快捷链接" : "新增外部常用快捷链接"}</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+ 
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="flex flex-col gap-1">
+                                    <input
+                                      type="text"
+                                      required
+                                      placeholder="名称，如: 百度学术"
+                                      value={newLinkName}
+                                      onChange={(e) => setNewLinkName(e.target.value)}
+                                      className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <input
+                                      type="text"
+                                      required
+                                      placeholder="网址，如: baidu.com"
+                                      value={newLinkUrl}
+                                      onChange={(e) => setNewLinkUrl(e.target.value)}
+                                      className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-mono focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  </div>
+                                </div>
+ 
+                                <div className="flex flex-col gap-1">
+                                  <input
+                                    type="text"
+                                    placeholder="简要说明或备注用途..."
+                                    value={newLinkDesc}
+                                    onChange={(e) => setNewLinkDesc(e.target.value)}
+                                    className="w-full text-xs px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-800 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
 
-                        {/* Action arrow with dynamic route preference colors */}
-                        <div className={`p-2 rounded-lg transition duration-150 shrink-0 ${
-                          routePreference === 'tailscale'
-                            ? 'text-slate-400 bg-slate-50/60 group-hover:text-emerald-700 group-hover:bg-emerald-100/60'
-                            : 'text-slate-400 bg-slate-50/60 group-hover:text-indigo-700 group-hover:bg-indigo-100/60'
-                        }`}>
-                          <ArrowUpRight className="w-4 h-4" />
+                                <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/40 border-dashed">
+                                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={newLinkUseFavicon}
+                                      onChange={(e) => setNewLinkUseFavicon(e.target.checked)}
+                                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
+                                    />
+                                    <span className="text-[10px] font-medium text-slate-600">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
+                                  </label>
+                                  
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] font-bold text-slate-500 shrink-0">生成图标文字:</span>
+                                    <input
+                                      type="text"
+                                      maxLength={4}
+                                      placeholder="默认切前1-2字"
+                                      value={newLinkIconText}
+                                      onChange={(e) => setNewLinkIconText(e.target.value)}
+                                      className="flex-1 text-[11px] px-2 py-0.5 bg-white border border-slate-200 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 font-medium placeholder:text-slate-400"
+                                      title="当未启用或无法抓取 Favicon 时，生成图标内显示的 1-4 位自定义字符"
+                                    />
+                                  </div>
+                                </div>
+ 
+                                <div className="flex items-center justify-between gap-1.5 p-1 bg-white border border-slate-100 rounded-lg">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-[10px] font-medium text-slate-500 truncate border-none">自动匹配图标:</span>
+                                    <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                                      <ExternalFavicon url={newLinkUrl} name={newLinkName || '新'} size="sm" useFavicon={newLinkUseFavicon} iconText={newLinkIconText} />
+                                    </div>
+                                    <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 px-1 py-0.5 rounded-sm truncate">
+                                      {autoAssignIcon(newLinkUrl, newLinkName)}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="submit"
+                                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-md transition-all cursor-pointer"
+                                  >
+                                    {editingLinkId ? "保存修改" : "保存"}
+                                  </button>
+                                </div>
+                              </motion.form>
+                            )}
+                          </AnimatePresence>
+ 
+                          <AnimatePresence initial={false}>
+                            {isExternalShortcutExpanded && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
+                                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                                className="overflow-hidden"
+                              >
+                                <div className="grid grid-cols-2 gap-3 pt-0.5">
+                                  {externalLinks.map(ext => (
+                                    <div key={ext.id} className="relative group/parent">
+                                      <a
+                                        href={isEditModeActive ? undefined : ext.url}
+                                        target={isEditModeActive ? undefined : "_blank"}
+                                        rel="noopener noreferrer"
+                                        onClick={isEditModeActive ? (e) => { e.preventDefault(); handleStartEditExternalLink(ext); } : undefined}
+                                        className={`group/ext flex items-center gap-2.5 p-2.5 bg-white hover:bg-slate-50 border border-slate-200/60 hover:border-indigo-300 rounded-xl transition-all duration-200 cursor-pointer text-left min-w-0 ${isEditModeActive ? 'pr-20' : ''}`}
+                                        title={isEditModeActive ? `编辑: ${ext.name}` : `点击跳转至: ${ext.url}\n${ext.description}`}
+                                      >
+                                        <div className="p-1.5 bg-slate-50 border border-slate-100 rounded-lg group-hover/ext:bg-indigo-50/55 group-hover/ext:border-indigo-100 transition-colors flex items-center justify-center shrink-0">
+                                          <ExternalFavicon url={ext.url} name={ext.name} size="md" useFavicon={ext.useFavicon !== false} iconText={ext.iconText} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="text-xs font-bold text-slate-800 group-hover/ext:text-indigo-600 transition-colors tracking-tight flex items-center gap-0.5">
+                                            <span className="truncate">{ext.name}</span>
+                                            {!isEditModeActive && <ArrowUpRight className="w-3 h-3 text-slate-400 opacity-0 group-hover/ext:opacity-100 transition-opacity shrink-0" />}
+                                          </div>
+                                          <p className="text-[10px] text-slate-400 truncate leading-tight mt-0.5">{ext.description}</p>
+                                        </div>
+                                      </a>
+ 
+                                      {/* Deletion and Edit overlay for list mode */}
+                                      {isEditModeActive ? (
+                                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10 animate-fade-in">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              handleStartEditExternalLink(ext);
+                                            }}
+                                            className="p-1 bg-amber-500 hover:bg-amber-600 text-white rounded-md transition shadow-xs cursor-pointer flex items-center justify-center"
+                                            title={`编辑 ${ext.name}`}
+                                          >
+                                            <SquarePen className="w-3 h-3 text-white" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              handleDeleteExternalLink(ext.id, ext.name);
+                                            }}
+                                            className="p-1 bg-rose-500 hover:bg-rose-600 text-white rounded-md transition shadow-xs cursor-pointer flex items-center justify-center"
+                                            title={`删除 ${ext.name}`}
+                                          >
+                                            <X className="w-3 h-3 text-white" />
+                                          </button>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                      </a>
-                    );
-                  })}
-                </div>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
 
                 {/* 地址转换回到内网专区底部 */}
                 <div className="mt-5 pt-4 border-t border-slate-100/80">
-                  <DualRouteConverter />
+                  <DualRouteConverter isCompact={intranetViewMode === 'icons'} />
                 </div>
               </div>
             </section>
