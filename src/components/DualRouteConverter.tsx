@@ -133,7 +133,7 @@ export default function DualRouteConverter({ isCompact = false }: DualRouteConve
       </div>
 
       {/* Output Buttons Row */}
-      <div className={`grid grid-cols-2 gap-2 w-full ${isCompact ? 'pt-0.5' : 'pt-1.5 border-t border-slate-150/40 dark:border-zinc-800'}`}>
+      <div className={`grid grid-cols-2 gap-2 w-full ${isCompact ? 'pt-0.5' : 'pt-1.5 border-t border-slate-200/50 dark:border-zinc-800'}`}>
         {/* Tailscale Route Action */}
         <button
           id="btn-copy-card-ts"

@@ -612,9 +612,9 @@ export default function App() {
 
       {/* ================================= HEADER BAR ================================= */}
       <header id="main-header" className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-slate-200/80 dark:border-zinc-800/90 shadow-xs transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 grid grid-cols-2 sm:flex sm:flex-row items-center justify-between gap-y-3 gap-x-4">
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 col-span-1 justify-self-start">
             <div className="p-1.5 bg-slate-900 text-teal-400 rounded-lg flex items-center justify-center shrink-0 shadow-xs">
               <Terminal className="w-4 h-4" />
             </div>
@@ -624,15 +624,15 @@ export default function App() {
           </div>
 
           {/* Dynamic Tailscale Connection diagnostics & quick actions */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0 flex-wrap justify-center sm:justify-end">
+          <div className="contents sm:flex sm:items-center sm:gap-3 sm:gap-4 sm:shrink-0 sm:flex-wrap sm:justify-end">
             {/* Quick Links */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 col-span-1 justify-self-end">
               <a
                 id="btn-link-github"
                 href="https://github.com/nnlgroupdmu/welcome"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 title="访问 GitHub 仓库"
               >
                 <Github className="w-5 h-5" />
@@ -640,7 +640,7 @@ export default function App() {
               <button
                 id="btn-link-contact"
                 onClick={() => handleCopyToClipboard('mistiiixv@gmail.com', 'admin-email')}
-                className="p-2 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors cursor-pointer relative"
+                className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors cursor-pointer relative"
                 title={copiedId === 'admin-email' ? '邮箱已复制！' : '复制管理员邮箱 (mistiiixv@gmail.com)'}
               >
                 <Mail className="w-5 h-5" />
@@ -658,7 +658,7 @@ export default function App() {
                   title="主题设置"
                 >
                   <motion.div
-                    key={themeMode}
+                     key={themeMode}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.15 }}
@@ -736,7 +736,7 @@ export default function App() {
             <div className="h-5 w-[1px] bg-slate-200 hidden sm:block"></div>
 
             {/* Unified Route Selector & Dynamic Diagnostics Dashboard (Highly Organic Capsule Integration) */}
-            <div className={`p-1 rounded-full border transition-all duration-350 flex items-center gap-1.5 select-none shadow-xs shrink-0 ${
+            <div className={`p-1 rounded-full border transition-all duration-350 flex items-center gap-1.5 select-none shadow-xs shrink-0 col-span-2 justify-self-center sm:col-span-1 sm:justify-self-auto ${
               routePreference === 'tailscale'
                 ? 'bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/15'
                 : 'bg-indigo-500/5 hover:bg-indigo-500/10 border-indigo-500/15'
