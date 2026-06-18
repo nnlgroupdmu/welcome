@@ -46,13 +46,14 @@ import {
   Gauge,
   ArrowUp,
   SquarePen,
+  Library,
   Globe,
   Sun,
   Moon,
   Monitor
 } from 'lucide-react';
 import { NavItem, ServiceAsset, MemoPost, ExternalLinkAsset } from './types';
-import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS, DEFAULT_EXTERNAL_LINKS } from './data';
+import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS, DEFAULT_EXTERNAL_LINKS, PRESET_EXTERNAL_LINKS } from './data';
 
 import AnnouncementBanner from './components/AnnouncementBanner'; // 🌟 引入公告
 import DualRouteConverter from './components/DualRouteConverter'; // 🌟 引入双路地址智能转换小工具
@@ -60,6 +61,9 @@ import MemoContent from './components/MemoContent'; // 🌟 引入自适应内�
 import Markdown from 'react-markdown';
 import { GpuMonitor } from './components/GpuMonitor';
 import { ExternalFavicon } from './components/ExternalFavicon';
+
+import emojiData from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 
 export default function App() {
@@ -209,10 +213,17 @@ export default function App() {
   // States & handers for user customizing/uploading external shortcut links
   const [newLinkUseFavicon, setNewLinkUseFavicon] = useState<boolean>(true);
   const [newLinkIconText, setNewLinkIconText] = useState<string>('');
+  const [newLinkIconType, setNewLinkIconType] = useState<'favicon' | 'emoji' | 'text'>('favicon');
+  const [newLinkEmoji, setNewLinkEmoji] = useState<string>('🚀');
+  const [newLinkCustomColor, setNewLinkCustomColor] = useState<string>('teal');
+  const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
 
   const [isEditModeActive, setIsEditModeActive] = useState<boolean>(false);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [isAddingLink, setIsAddingLink] = useState<boolean>(false);
+  const [activeAddTab, setActiveAddTab] = useState<'preset' | 'custom'>('preset');
+  const [activePresetCategory, setActivePresetCategory] = useState<string>('全部');
+  const [presetSearchQuery, setPresetSearchQuery] = useState<string>('');
   const [newLinkName, setNewLinkName] = useState<string>('');
   const [newLinkUrl, setNewLinkUrl] = useState<string>('');
   const [newLinkDesc, setNewLinkDesc] = useState<string>('');
@@ -225,6 +236,12 @@ export default function App() {
     const assignedIcon = autoAssignIcon(newLinkUrl.trim(), newLinkName.trim());
     const finalUrl = newLinkUrl.trim().startsWith('http') ? newLinkUrl.trim() : `https://${newLinkUrl.trim()}`;
 
+    const useFavicon = newLinkIconType === 'favicon';
+    const isEmoji = newLinkIconType === 'emoji';
+    const finalEmoji = isEmoji ? newLinkEmoji : undefined;
+    const finalIconText = newLinkIconType === 'text' ? (newLinkIconText.trim() || undefined) : undefined;
+    const customColor = (newLinkIconType === 'emoji' || newLinkIconType === 'text') ? newLinkCustomColor : undefined;
+
     if (editingLinkId) {
       // Update Mode
       setExternalLinks(prev => prev.map(item => {
@@ -235,8 +252,11 @@ export default function App() {
             description: newLinkDesc.trim() || '自定义外部快捷访问项目。',
             icon: assignedIcon,
             url: finalUrl,
-            useFavicon: newLinkUseFavicon,
-            iconText: newLinkIconText.trim() || undefined
+            useFavicon,
+            isEmoji,
+            emoji: finalEmoji,
+            iconText: finalIconText,
+            customColor
           };
         }
         return item;
@@ -250,8 +270,11 @@ export default function App() {
         description: newLinkDesc.trim() || '自定义外部快捷访问项目。',
         icon: assignedIcon,
         url: finalUrl,
-        useFavicon: newLinkUseFavicon,
-        iconText: newLinkIconText.trim() || undefined
+        useFavicon,
+        isEmoji,
+        emoji: finalEmoji,
+        iconText: finalIconText,
+        customColor
       };
       setExternalLinks(prev => [...prev, newLink]);
     }
@@ -261,6 +284,10 @@ export default function App() {
     setNewLinkDesc('');
     setNewLinkUseFavicon(true);
     setNewLinkIconText('');
+    setNewLinkIconType('favicon');
+    setNewLinkEmoji('🚀');
+    setNewLinkCustomColor('teal');
+    setShowEmojiPicker(false);
     setIsAddingLink(false);
   };
 
@@ -269,9 +296,23 @@ export default function App() {
     setNewLinkName(ext.name);
     setNewLinkUrl(ext.url);
     setNewLinkDesc(ext.description);
-    setNewLinkUseFavicon(ext.useFavicon !== false);
+    
+    if (ext.isEmoji) {
+      setNewLinkIconType('emoji');
+      setNewLinkEmoji(ext.emoji || '🚀');
+      setNewLinkUseFavicon(false);
+    } else if (ext.useFavicon) {
+      setNewLinkIconType('favicon');
+      setNewLinkUseFavicon(true);
+    } else {
+      setNewLinkIconType('text');
+      setNewLinkUseFavicon(false);
+    }
+    
     setNewLinkIconText(ext.iconText || '');
+    setNewLinkCustomColor(ext.customColor || 'teal');
     setIsAddingLink(true); // Open the input panel
+    setActiveAddTab('custom'); // Switch to custom edit tab
   };
 
   const handleCancelEdit = () => {
@@ -281,6 +322,10 @@ export default function App() {
     setNewLinkDesc('');
     setNewLinkUseFavicon(true);
     setNewLinkIconText('');
+    setNewLinkIconType('favicon');
+    setNewLinkEmoji('🚀');
+    setNewLinkCustomColor('teal');
+    setShowEmojiPicker(false);
     setIsAddingLink(false);
   };
 
@@ -294,6 +339,49 @@ export default function App() {
     if (window.confirm('确定要重置外部链接至大连海事大学默认列表吗？')) {
       setExternalLinks(DEFAULT_EXTERNAL_LINKS);
     }
+  };
+
+  const handleAddPresetLink = (preset: typeof PRESET_EXTERNAL_LINKS[0]) => {
+    const urlMatches = (url1: string, url2: string) => {
+      try {
+        const u1 = url1.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '').toLowerCase();
+        const u2 = url2.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '').toLowerCase();
+        return u1 === u2;
+      } catch {
+        return url1.toLowerCase().trim() === url2.toLowerCase().trim();
+      }
+    };
+
+    const alreadyExists = externalLinks.some(link => urlMatches(link.url, preset.url) || link.name.toLowerCase() === preset.name.toLowerCase());
+    if (alreadyExists) return;
+
+    const newLink: ExternalLinkAsset = {
+      id: 'ext-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      name: preset.name,
+      description: preset.description,
+      icon: 'ExternalLink',
+      url: preset.url,
+      useFavicon: preset.useFavicon,
+      isEmoji: preset.isEmoji,
+      emoji: preset.emoji,
+      iconText: preset.iconText,
+      customColor: preset.customColor
+    };
+
+    setExternalLinks(prev => [...prev, newLink]);
+  };
+
+  const isPresetAdded = (presetUrl: string, presetName: string) => {
+    return externalLinks.some(link => {
+      if (link.name.toLowerCase() === presetName.toLowerCase()) return true;
+      try {
+        const u1 = link.url.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '').toLowerCase();
+        const u2 = presetUrl.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '').toLowerCase();
+        return u1 === u2;
+      } catch {
+        return link.url.toLowerCase().trim() === presetUrl.toLowerCase().trim();
+      }
+    });
   };
 
   // Automatically exit edit mode on switching views, categories, search queries, tags or route preference
@@ -415,14 +503,36 @@ export default function App() {
           const avatarUrl = item.avatarUrl || (item.creator && item.creator.avatarUrl) || '';
 
 
-          // 时间格式化
+          // 时间格式化 (转换为东八区北京时间)
           let tsString = '';
+
+          // 一个小巧的辅助函数，用来把 Date 对象直接转成东八区的 YYYY-MM-DD HH:mm
+          const formatToCST = (date: Date) => {
+            return new Intl.DateTimeFormat('zh-CN', {
+              timeZone: 'Asia/Shanghai',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false // 使用 24 小时制
+            })
+            .format(date)
+            .replace(/\//g, '-')   // 将格式化出来的斜杠 / 替换为短横线 -
+            .replace(',', '');     // 兼容某些环境可能产生的逗号
+          };
+
           if (item.createTime) {
-            tsString = item.createTime.replace('T', ' ').slice(0, 16);
+            // 如果 item.createTime 已经是带 'T' 的 ISO 字符串（如 "2026-06-18T09:30:00Z"）
+            // 必须先送入 new Date() 解析，再用辅助函数转时区。直接 slice 拿到的会是 0 时区。
+            const d = new Date(item.createTime);
+            tsString = isNaN(d.getTime()) ? item.createTime.replace('T', ' ').slice(0, 16) : formatToCST(d);
           } else if (item.createdTs) {
-            tsString = new Date(item.createdTs * 1000).toISOString().replace('T', ' ').slice(0, 16);
+            // 秒级时间戳转换
+            tsString = formatToCST(new Date(item.createdTs * 1000));
           } else {
-            tsString = new Date().toISOString().replace('T', ' ').slice(0, 16);
+            // 当前时间转换
+            tsString = formatToCST(new Date());
           }
 
           return {
@@ -1245,7 +1355,7 @@ export default function App() {
           <div className="w-full h-full lg:overflow-y-auto lg:pr-2 flex flex-col lg:gap-8 scrollbar-container">
 
             {/* ----------------- 2. 内网专区 (DIGITAL ASSETS - APP-LIKE LAUNCHERS) ----------------- */}
-            <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-2 lg:order-none shrink-0">
+            <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-visible order-2 lg:order-none shrink-0">
               <div>
                 <div className="flex items-start justify-between mb-5 pb-2.5 border-b border-slate-100 dark:border-zinc-800 gap-4">
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -1414,43 +1524,221 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => {
-                                setIsAddingLink(!isAddingLink);
+                                const nextState = !isAddingLink;
+                                setIsAddingLink(nextState);
+                                if (nextState) {
+                                  setActiveAddTab('preset');
+                                  setIsExternalShortcutExpanded(true);
+                                }
                                 setEditingLinkId(null);
                                 setNewLinkName('');
                                 setNewLinkUrl('');
                                 setNewLinkDesc('');
                               }}
-                              className="p-1 hover:bg-slate-100 rounded-md transition text-slate-400 hover:text-indigo-600 focus:outline-hidden cursor-pointer"
-                              title={isAddingLink ? "收起面板" : "添加自定义工具链接"}
+                              className={`p-1 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded-md transition cursor-pointer focus:outline-hidden ${isAddingLink ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600'}`}
+                              title={isAddingLink ? "收起面板" : "添加与推荐预设应用库"}
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
 
-                        {/* Dynamic Client Link Addition Panel */}
+                        {/* Dynamic Client Link Addition & Preset App Library Panel */}
                         <AnimatePresence>
                           {isAddingLink && (
-                            <motion.form
-                              onSubmit={handleSaveOrUpdateExternalLink}
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto', marginBottom: 10 }}
-                              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                              className="overflow-hidden bg-slate-100/65 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/80 rounded-xl p-3 flex flex-col gap-2 my-1 text-left transition-colors duration-200"
+                            <motion.div
+                              initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                              animate={{ opacity: 1, height: 'auto', marginBottom: 10, transitionEnd: { overflow: 'visible' } }}
+                              exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
+                              className="bg-slate-100/65 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/80 rounded-xl p-3.5 flex flex-col gap-3 my-1 text-left transition-colors duration-200 shadow-[inset_0_1px_2px_rgba(99,102,241,0.02)]"
                             >
-                              <div className="flex items-center justify-between border-b border-slate-200/40 dark:border-slate-800 pb-1.5">
-                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                  {editingLinkId ? <SquarePen className="w-3.5 h-3.5 text-indigo-500" /> : <Plus className="w-3.5 h-3.5 text-indigo-500" />}
-                                  <span>{editingLinkId ? "编辑外部常用链接" : "新增外部常用链接"}</span>
-                                </span>
+                              {/* Seamless Header Tabs */}
+                              <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-2">
+                                <div className="flex items-center gap-1.5 bg-slate-200/50 dark:bg-zinc-800 p-0.5 rounded-lg select-none">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveAddTab('preset');
+                                      setEditingLinkId(null);
+                                    }}
+                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                                      activeAddTab === 'preset'
+                                        ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                                    }`}
+                                  >
+                                    推荐预设应用库
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveAddTab('custom')}
+                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                                      activeAddTab === 'custom'
+                                        ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                                    }`}
+                                  >
+                                    {editingLinkId ? '编辑自定义链接' : '新增自定义链接'}
+                                  </button>
+                                </div>
+
                                 <button
                                   type="button"
-                                  onClick={handleCancelEdit}
-                                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
+                                  onClick={() => {
+                                    setIsAddingLink(false);
+                                    handleCancelEdit();
+                                  }}
+                                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer p-1 rounded-md hover:bg-slate-200/40 dark:hover:bg-zinc-800"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
                               </div>
+
+                              {activeAddTab === 'preset' ? (
+                                /* Preset App Library View */
+                                <div className="flex flex-col gap-3 animate-fade-in pb-1 text-left">
+                                  {/* Category Selectors & Search Input */}
+                                  <div className="flex flex-col gap-2">
+                                    {/* Search Input bar */}
+                                    <div className="relative">
+                                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                                        <Search className="w-3 h-3 text-slate-400" />
+                                      </span>
+                                      <input
+                                        type="text"
+                                        placeholder="在推荐预设库中搜索..."
+                                        value={presetSearchQuery}
+                                        onChange={(e) => setPresetSearchQuery(e.target.value)}
+                                        className="w-full text-[10.5px] pl-7.5 pr-8 py-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                                      />
+                                      {presetSearchQuery && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setPresetSearchQuery('')}
+                                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded-md hover:bg-slate-105 dark:hover:bg-zinc-800 cursor-pointer"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Category Selectors */}
+                                    <div className="flex flex-wrap gap-1">
+                                      {['全部', 'AI 智能助手', '学术/科研检索', '实用绘图/效率', '开发辅助/分享'].map((cat) => (
+                                        <button
+                                          key={cat}
+                                          type="button"
+                                          onClick={() => setActivePresetCategory(cat)}
+                                          className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition cursor-pointer select-none ${
+                                            activePresetCategory === cat
+                                              ? 'bg-indigo-600 text-white border border-indigo-600 shadow-xs'
+                                              : 'bg-white hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400'
+                                          }`}
+                                        >
+                                          {cat}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* List of Preset Apps (one app per line) */}
+                                  <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                                    {(() => {
+                                      const filteredList = PRESET_EXTERNAL_LINKS.filter(p => {
+                                        const matchesCat = activePresetCategory === '全部' || p.category === activePresetCategory;
+                                        const query = presetSearchQuery.trim().toLowerCase();
+                                        const matchesSearch = !query || 
+                                          p.name.toLowerCase().includes(query) || 
+                                          (p.description && p.description.toLowerCase().includes(query)) ||
+                                          p.category.toLowerCase().includes(query) ||
+                                          p.url.toLowerCase().includes(query);
+                                        return matchesCat && matchesSearch;
+                                      });
+
+                                      if (filteredList.length === 0) {
+                                        return (
+                                          <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50/20 dark:bg-zinc-900/10">
+                                            <Search className="w-5 h-5 text-slate-350 dark:text-zinc-650 mb-1" />
+                                            <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold">没有匹配的预设应用</p>
+                                            {(presetSearchQuery || activePresetCategory !== '全部') && (
+                                              <button
+                                                type="button"
+                                                onClick={() => { setPresetSearchQuery(''); setActivePresetCategory('全部'); }}
+                                                className="text-[9px] text-indigo-600 dark:text-indigo-400 hover:underline mt-1 font-bold cursor-pointer"
+                                              >
+                                                重置筛选条件
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      }
+
+                                      return filteredList.map((preset, index) => {
+                                        const added = isPresetAdded(preset.url, preset.name);
+                                        return (
+                                          <div 
+                                            key={index}
+                                            className="flex items-start justify-between gap-3 p-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-2xs hover:border-indigo-200/65 dark:hover:border-indigo-900/50 transition-all min-w-0"
+                                          >
+                                            <div className="flex items-start gap-2.5 min-w-0 flex-1 text-left">
+                                              <div className="p-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700/65 rounded-md flex items-center justify-center shrink-0 mt-0.5">
+                                                <ExternalFavicon
+                                                  url={preset.url}
+                                                  name={preset.name}
+                                                  size="sm"
+                                                  useFavicon={preset.useFavicon !== false}
+                                                  isEmoji={preset.isEmoji}
+                                                  emoji={preset.emoji}
+                                                  iconText={preset.iconText}
+                                                  customColor={preset.customColor}
+                                                  icon="ExternalLink"
+                                                />
+                                              </div>
+                                              <div className="min-w-0 flex-1 flex flex-col pt-0.5 text-left">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                  <a 
+                                                    href={preset.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-[11.5px] font-bold text-slate-800 dark:text-zinc-200 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer group/preset-lbl truncate leading-tight"
+                                                    title={`在浏览器中打开: ${preset.url}`}
+                                                  >
+                                                    <span className="truncate group-hover/preset-lbl:underline">{preset.name}</span>
+                                                    <ExternalLink className="w-2.5 h-2.5 text-slate-450 dark:text-zinc-500 shrink-0 opacity-60 group-hover/preset-lbl:opacity-100 transition-opacity" />
+                                                  </a>
+                                                  <span className="text-[8px] px-1 py-0.2 bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-550 rounded-xs shrink-0 font-medium">{preset.category}</span>
+                                                </div>
+                                                <span className="text-[9.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed" title={preset.description}>
+                                                  {preset.description}
+                                                </span>
+                                              </div>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              disabled={added}
+                                              onClick={() => handleAddPresetLink(preset)}
+                                              className={`shrink-0 p-1.5 rounded-lg cursor-pointer transition select-none flex items-center justify-center mt-1 ${
+                                                added
+                                                  ? 'bg-slate-50 dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 border border-transparent cursor-not-allowed opacity-80'
+                                                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-755 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 dark:text-indigo-400 border border-indigo-100/40 dark:border-indigo-900/30 shadow-2xs hover:scale-105 active:scale-95'
+                                              }`}
+                                              title={added ? "已添加" : "一键添加外部链接"}
+                                            >
+                                              {added ? (
+                                                <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                                              ) : (
+                                                <Plus className="w-3.5 h-3.5 stroke-[2.5px]" />
+                                              )}
+                                            </button>
+                                          </div>
+                                        );
+                                      });
+                                    })()}
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Custom Add Link Form */
+                                <form onSubmit={handleSaveOrUpdateExternalLink} className="flex flex-col gap-2.5 w-full">
 
                               <div className="grid grid-cols-2 gap-2">
                                 <div className="flex flex-col gap-1">
@@ -1461,7 +1749,7 @@ export default function App() {
                                     placeholder="比如: 百度学术"
                                     value={newLinkName}
                                     onChange={(e) => setNewLinkName(e.target.value)}
-                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium"
+                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -1472,7 +1760,7 @@ export default function App() {
                                     placeholder="baidu.com"
                                     value={newLinkUrl}
                                     onChange={(e) => setNewLinkUrl(e.target.value)}
-                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-mono"
+                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-mono placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                                   />
                                 </div>
                               </div>
@@ -1484,40 +1772,169 @@ export default function App() {
                                   placeholder="对该外部快捷工具的描述..."
                                   value={newLinkDesc}
                                   onChange={(e) => setNewLinkDesc(e.target.value)}
-                                  className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium"
+                                  className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                                 />
                               </div>
 
                               <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/45 dark:border-slate-800 border-dashed">
-                                <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                  <input
-                                    type="checkbox"
-                                    checked={newLinkUseFavicon}
-                                    onChange={(e) => setNewLinkUseFavicon(e.target.checked)}
-                                    className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
-                                  />
-                                  <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
-                                </label>
-                                
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 shrink-0">生成图标文字:</span>
-                                  <input
-                                    type="text"
-                                    maxLength={4}
-                                    placeholder="默认切前1-2字"
-                                    value={newLinkIconText}
-                                    onChange={(e) => setNewLinkIconText(e.target.value)}
-                                    className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
-                                    title="当未启用或无法抓取 Favicon 时，生成图标内显示的 1-4 位自定义字符"
-                                  />
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">图标展示方式:</span>
+                                <div className="grid grid-cols-3 gap-1 bg-slate-50/80 dark:bg-slate-950 p-1 border border-slate-200/50 dark:border-slate-800 rounded-lg">
+                                  {[
+                                    { key: 'favicon', label: '网站 Favicon' },
+                                    { key: 'emoji', label: 'Emoji 图标' },
+                                    { key: 'text', label: '自定义文字' }
+                                  ].map((tab) => (
+                                    <button
+                                      key={tab.key}
+                                      type="button"
+                                      onClick={() => setNewLinkIconType(tab.key as any)}
+                                      className={`py-1 text-[10px] font-bold rounded-md transition cursor-pointer text-center ${
+                                        newLinkIconType === tab.key
+                                          ? 'bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold shadow-2xs'
+                                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                      }`}
+                                    >
+                                      {tab.label}
+                                    </button>
+                                  ))}
                                 </div>
+
+                                {newLinkIconType === 'emoji' && (
+                                  <div className="flex flex-col gap-1.5 mt-1 animate-fade-in relative">
+                                    <div className="flex flex-row items-center gap-2">
+                                      <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 shrink-0">输入或选择 Emoji:</span>
+                                      <input
+                                        type="text"
+                                        maxLength={2}
+                                        placeholder="🚀"
+                                        value={newLinkEmoji}
+                                        onChange={(e) => {
+                                          setNewLinkEmoji(e.target.value);
+                                          setShowEmojiPicker(false);
+                                        }}
+                                        className="w-12 text-xs px-2 py-0.5 text-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-zinc-100 font-medium font-emoji"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                        className="py-1 px-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-650 dark:text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-100/40 dark:border-indigo-900/30 transition cursor-pointer flex items-center justify-center gap-1 select-none active:scale-95"
+                                      >
+                                        <span>🤩 弹出完整表情库</span>
+                                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-250 ${showEmojiPicker ? 'rotate-180' : ''}`} />
+                                      </button>
+                                    </div>
+
+                                    {showEmojiPicker && (
+                                      <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                                        <div className="absolute right-0 top-full mt-2 z-50 shadow-2xl border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden emoji-picker-container bg-white dark:bg-zinc-950">
+                                          <Picker 
+                                            data={emojiData} 
+                                            onEmojiSelect={(emoji: any) => {
+                                              setNewLinkEmoji(emoji.native);
+                                              setShowEmojiPicker(false);
+                                            }} 
+                                            theme={isDarkMode ? 'dark' : 'light'}
+                                            previewPosition="none"
+                                            skinPosition="none"
+                                            navPosition="bottom"
+                                            perLine={8}
+                                            maxFrequentRows={1}
+                                          />
+                                        </div>
+                                      </>
+                                    )}
+
+                                    <div className="flex flex-wrap gap-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 p-1.5 rounded-lg max-h-[72px] overflow-y-auto w-full">
+                                      {['🚀', '💻', '🧠', '📊', '📧', '🌐', '📚', '💡', '🛠️', '🔬', '🎓', '🪐', '🎨', '🔥', '⚙️', '🔍'].map((em) => (
+                                        <button
+                                          key={em}
+                                          type="button"
+                                          onClick={() => {
+                                            setNewLinkEmoji(em);
+                                            setShowEmojiPicker(false);
+                                          }}
+                                          className={`w-7 h-7 text-sm rounded-md transition cursor-pointer flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 border ${
+                                            newLinkEmoji === em 
+                                              ? 'bg-white dark:bg-slate-900 border-indigo-500/70 scale-105 shadow-2xs' 
+                                              : 'border-transparent'
+                                          }`}
+                                        >
+                                          {em}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {newLinkIconType === 'text' && (
+                                  <div className="flex flex-col gap-1.5 mt-1 animate-fade-in">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 shrink-0">文字内容:</span>
+                                      <input
+                                        type="text"
+                                        maxLength={4}
+                                        placeholder="例：学术, AI"
+                                        value={newLinkIconText}
+                                        onChange={(e) => setNewLinkIconText(e.target.value)}
+                                        className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {newLinkIconType === 'text' && (
+                                  <div className="flex flex-col gap-1.5 mt-1.5 animate-fade-in">
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">选择图标配色:</span>
+                                    <div className="flex flex-wrap gap-2 mt-0.5">
+                                      {Object.entries({
+                                        teal: { label: '青绿', bg: 'bg-gradient-to-br from-teal-500 to-emerald-600' },
+                                        indigo: { label: '靛蓝', bg: 'bg-gradient-to-br from-indigo-500 to-purple-600' },
+                                        blue: { label: '蓝色', bg: 'bg-gradient-to-br from-blue-500 to-cyan-600' },
+                                        rose: { label: '玫瑰', bg: 'bg-gradient-to-br from-rose-500 to-pink-600' },
+                                        amber: { label: '琥珀', bg: 'bg-gradient-to-br from-amber-500 to-orange-600' },
+                                        violet: { label: '紫色', bg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600' },
+                                        emerald: { label: '硬绿', bg: 'bg-gradient-to-br from-emerald-500 to-green-600' },
+                                        slate: { label: '石板', bg: 'bg-gradient-to-br from-slate-500 to-slate-600' },
+                                      }).map(([colorKey, info]) => (
+                                        <button
+                                          key={colorKey}
+                                          type="button"
+                                          onClick={() => setNewLinkCustomColor(colorKey)}
+                                          className={`w-5.5 h-5.5 rounded-full ${info.bg} relative transition-all duration-200 cursor-pointer shadow-xs border focus:outline-hidden ${
+                                            newLinkCustomColor === colorKey 
+                                              ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-950 scale-110 border-white dark:border-zinc-900' 
+                                              : 'hover:scale-105 border-transparent'
+                                          }`}
+                                          title={info.label}
+                                        >
+                                          {newLinkCustomColor === colorKey && (
+                                            <span className="absolute inset-0 flex items-center justify-center">
+                                              <Check className="w-2.5 h-2.5 text-white stroke-[3px]" />
+                                            </span>
+                                          )}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="flex items-center justify-between gap-1.5 mt-1 p-1 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg">
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate shrink-0">图标自动匹配：</span>
-                                  <div className="w-6 h-6 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
-                                    <ExternalFavicon url={newLinkUrl} name={newLinkName || '新'} size="sm" useFavicon={newLinkUseFavicon} iconText={newLinkIconText} />
+                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate shrink-0">图标实时匹配及预览：</span>
+                                  <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shrink-0">
+                                    <ExternalFavicon
+                                      url={newLinkUrl}
+                                      name={newLinkName || '新'}
+                                      size="sm"
+                                      useFavicon={newLinkIconType === 'favicon'}
+                                      iconText={newLinkIconType === 'text' ? newLinkIconText : ''}
+                                      isEmoji={newLinkIconType === 'emoji'}
+                                      emoji={newLinkEmoji}
+                                      icon={autoAssignIcon(newLinkUrl, newLinkName)}
+                                      customColor={newLinkCustomColor}
+                                    />
                                   </div>
                                   <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">
                                     {autoAssignIcon(newLinkUrl, newLinkName)}
@@ -1530,9 +1947,11 @@ export default function App() {
                                   {editingLinkId ? "保存修改" : "录入"}
                                 </button>
                               </div>
-                            </motion.form>
+                            </form>
                           )}
-                        </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                         {/* Collapsible External Links Grid in Icons Mode */}
                         <AnimatePresence initial={false}>
@@ -1573,7 +1992,17 @@ export default function App() {
                                         >
                                           {/* Inner Icon */}
                                           <div className="transition-transform duration-300 group-hover:scale-110 flex items-center justify-center">
-                                            <ExternalFavicon url={ext.url} name={ext.name} size="lg" useFavicon={ext.useFavicon !== false} iconText={ext.iconText} />
+                                            <ExternalFavicon
+                                              url={ext.url}
+                                              name={ext.name}
+                                              size="lg"
+                                              useFavicon={ext.useFavicon !== false}
+                                              iconText={ext.iconText}
+                                              isEmoji={ext.isEmoji}
+                                              emoji={ext.emoji}
+                                              icon={ext.icon}
+                                              customColor={ext.customColor}
+                                            />
                                           </div>
 
                                           {/* Edit Mode Overlay directly on the icon box */}
@@ -1713,8 +2142,7 @@ export default function App() {
                                 <button
                                   type="button"
                                   onClick={handleResetExternalLinks}
-                                  className="text-[10px] font-extrabold text-slate-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer px-1 py-0.5"
-                                  title="重置自定义外部链接"
+                                  className="text-[10px] font-extrabold text-slate-400 dark:text-zinc-500 hover:text-indigo-650 transition cursor-pointer px-1"
                                 >
                                   重置
                                 </button>
@@ -1727,7 +2155,7 @@ export default function App() {
                                     setIsExternalShortcutExpanded(true);
                                   }
                                 }}
-                                className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400' : 'text-slate-400 dark:text-zinc-400 hover:text-indigo-600 hover:bg-slate-200/80 dark:hover:bg-zinc-800'}`}
+                                className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50'}`}
                                 title={isEditModeActive ? "退出编辑与删除模式" : "进入编辑与删除模式"}
                               >
                                 <SquarePen className="w-3.5 h-3.5" />
@@ -1735,143 +2163,445 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setIsAddingLink(!isAddingLink);
+                                  const nextState = !isAddingLink;
+                                  setIsAddingLink(nextState);
+                                  if (nextState) {
+                                    setActiveAddTab('preset');
+                                    setIsExternalShortcutExpanded(true);
+                                  }
                                   setEditingLinkId(null);
                                   setNewLinkName('');
                                   setNewLinkUrl('');
                                   setNewLinkDesc('');
                                 }}
-                                className="p-1 hover:bg-slate-200/80 dark:hover:bg-zinc-800 rounded-md transition text-slate-400 dark:text-zinc-400 hover:text-indigo-600 focus:outline-hidden cursor-pointer flex items-center justify-center placeholder-gray-400"
-                                title={isAddingLink ? "收起面板" : "添加自定义工具链接"}
+                                className={`p-1 hover:bg-slate-200/50 rounded-md transition cursor-pointer focus:outline-hidden ${isAddingLink ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600'}`}
+                                title={isAddingLink ? "收起面板" : "添加与推荐预设应用库"}
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
-                              <button
-                                type="button"
-                                onClick={toggleExternalShortcutExpanded}
-                                className="p-1 text-slate-400 dark:text-zinc-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
-                              >
-                                {isExternalShortcutExpanded ? (
-                                  <ChevronUp className="w-4 h-4" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4" />
-                                )}
-                              </button>
                             </div>
                           </div>
- 
-                          {/* Render dynamic addition form under list mode shortcuts as well */}
-                          <AnimatePresence>
-                            {isAddingLink && (
-                              <motion.form
-                                onSubmit={handleSaveOrUpdateExternalLink}
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
-                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                className="overflow-hidden bg-white/70 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/80 rounded-xl p-3 flex flex-col gap-2 text-left transition-colors duration-200"
-                              >
-                                <div className="flex items-center justify-between border-b border-slate-200/40 dark:border-slate-800 pb-1.5 border-dashed">
-                                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                    {editingLinkId ? <SquarePen className="w-3.5 h-3.5 text-indigo-500" /> : <Plus className="w-3.5 h-3.5 text-indigo-500" />}
-                                    <span>{editingLinkId ? "编辑外部常用快捷链接" : "新增外部常用快捷链接"}</span>
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={handleCancelEdit}
-                                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
- 
+
+                           {/* Expansion wrapper for management form and grid list */}
+                           <AnimatePresence initial={false}>
+                             {isExternalShortcutExpanded && (
+                               <motion.div
+                                 initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+                                 animate={{ height: 'auto', opacity: 1, marginTop: 12, transitionEnd: { overflow: 'visible' } }}
+                                 exit={{ height: 0, opacity: 0, marginTop: 0, overflow: 'hidden' }}
+                                 transition={{ duration: 0.2, ease: "easeInOut" }}
+                                 className=""
+                               >
+                                  <AnimatePresence initial={false}>
+                                    {isAddingLink && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+                                        animate={{ height: 'auto', opacity: 1, marginBottom: 12, transitionEnd: { overflow: 'visible' } }}
+                                        exit={{ height: 0, opacity: 0, marginBottom: 0, overflow: 'hidden' }}
+                                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                                        className="border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 p-3.5 rounded-xl mb-3 shadow-[inset_0_1px_2px_rgba(99,102,241,0.02)] flex flex-col gap-3 text-left"
+                                      >
+                                      {/* Seamless Header Tabs */}
+                                      <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-2">
+                                        <div className="flex items-center gap-1.5 bg-slate-200/50 dark:bg-zinc-800 p-0.5 rounded-lg select-none">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveAddTab('preset');
+                                              setEditingLinkId(null);
+                                            }}
+                                            className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                                              activeAddTab === 'preset'
+                                                ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                                            }`}
+                                          >
+                                            推荐预设应用库
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setActiveAddTab('custom')}
+                                            className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
+                                              activeAddTab === 'custom'
+                                                ? 'bg-white dark:bg-zinc-700 text-slate-800 dark:text-zinc-100 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                                            }`}
+                                          >
+                                            {editingLinkId ? '编辑自定义链接' : '新增自定义链接'}
+                                          </button>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setIsAddingLink(false);
+                                            handleCancelEdit();
+                                          }}
+                                          className="text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 transition cursor-pointer p-1 rounded-md hover:bg-slate-200/40 dark:hover:bg-zinc-800"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+
+                                      {activeAddTab === 'preset' ? (
+                                        /* Preset App Library View */
+                                        <div className="flex flex-col gap-3 animate-fade-in pb-1 text-left">
+                                          {/* Category Selectors & Search Input */}
+                                          <div className="flex flex-col gap-2">
+                                            {/* Search Input bar */}
+                                            <div className="relative">
+                                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                                                <Search className="w-3 h-3 text-slate-400" />
+                                              </span>
+                                              <input
+                                                type="text"
+                                                placeholder="在推荐预设库中搜索..."
+                                                value={presetSearchQuery}
+                                                onChange={(e) => setPresetSearchQuery(e.target.value)}
+                                                className="w-full text-[10.5px] pl-7.5 pr-8 py-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+                                              />
+                                              {presetSearchQuery && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setPresetSearchQuery('')}
+                                                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 p-0.5 rounded-md hover:bg-slate-105 dark:hover:bg-zinc-800 cursor-pointer"
+                                                >
+                                                  <X className="w-3 h-3" />
+                                                </button>
+                                              )}
+                                            </div>
+
+                                            {/* Category Selectors */}
+                                            <div className="flex flex-wrap gap-1">
+                                              {['全部', 'AI 智能助手', '学术/科研检索', '实用绘图/效率', '开发辅助/分享'].map((cat) => (
+                                                <button
+                                                  key={cat}
+                                                  type="button"
+                                                  onClick={() => setActivePresetCategory(cat)}
+                                                  className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition cursor-pointer select-none ${
+                                                    activePresetCategory === cat
+                                                      ? 'bg-indigo-600 text-white border border-indigo-600 shadow-xs'
+                                                      : 'bg-white hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400'
+                                                  }`}
+                                                >
+                                                  {cat}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          </div>
+
+                                          {/* List of Preset Apps (one app per line) */}
+                                          <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                                            {(() => {
+                                              const filteredList = PRESET_EXTERNAL_LINKS.filter(p => {
+                                                const matchesCat = activePresetCategory === '全部' || p.category === activePresetCategory;
+                                                const query = presetSearchQuery.trim().toLowerCase();
+                                                const matchesSearch = !query || 
+                                                  p.name.toLowerCase().includes(query) || 
+                                                  (p.description && p.description.toLowerCase().includes(query)) ||
+                                                  p.category.toLowerCase().includes(query) ||
+                                                  p.url.toLowerCase().includes(query);
+                                                return matchesCat && matchesSearch;
+                                              });
+
+                                              if (filteredList.length === 0) {
+                                                return (
+                                                  <div className="flex flex-col items-center justify-center py-6 text-center border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50/20 dark:bg-zinc-900/10">
+                                                    <Search className="w-5 h-5 text-slate-350 dark:text-zinc-650 mb-1" />
+                                                    <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold">没有匹配的预设应用</p>
+                                                    {(presetSearchQuery || activePresetCategory !== '全部') && (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => { setPresetSearchQuery(''); setActivePresetCategory('全部'); }}
+                                                        className="text-[9px] text-indigo-600 dark:text-indigo-400 hover:underline mt-1 font-bold cursor-pointer"
+                                                      >
+                                                        重置筛选条件
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                                );
+                                              }
+
+                                              return filteredList.map((preset, index) => {
+                                                const added = isPresetAdded(preset.url, preset.name);
+                                                return (
+                                                  <div 
+                                                    key={index}
+                                                    className="flex items-start justify-between gap-3 p-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-2xs hover:border-indigo-200/65 dark:hover:border-indigo-900/50 transition-all min-w-0"
+                                                  >
+                                                    <div className="flex items-start gap-2.5 min-w-0 flex-1 text-left">
+                                                      <div className="p-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700/65 rounded-md flex items-center justify-center shrink-0 mt-0.5">
+                                                        <ExternalFavicon
+                                                          url={preset.url}
+                                                          name={preset.name}
+                                                          size="sm"
+                                                          useFavicon={preset.useFavicon !== false}
+                                                          isEmoji={preset.isEmoji}
+                                                          emoji={preset.emoji}
+                                                          iconText={preset.iconText}
+                                                          customColor={preset.customColor}
+                                                          icon="ExternalLink"
+                                                        />
+                                                      </div>
+                                                      <div className="min-w-0 flex-1 flex flex-col pt-0.5 text-left">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                          <a 
+                                                            href={preset.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 text-[11.5px] font-bold text-slate-800 dark:text-zinc-200 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer group/preset-lbl truncate leading-tight"
+                                                            title={`在浏览器中打开: ${preset.url}`}
+                                                          >
+                                                            <span className="truncate group-hover/preset-lbl:underline">{preset.name}</span>
+                                                            <ExternalLink className="w-2.5 h-2.5 text-slate-450 dark:text-zinc-500 shrink-0 opacity-60 group-hover/preset-lbl:opacity-100 transition-opacity" />
+                                                          </a>
+                                                          <span className="text-[8px] px-1 py-0.2 bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-550 rounded-xs shrink-0 font-medium">{preset.category}</span>
+                                                        </div>
+                                                        <span className="text-[9.5px] text-slate-500 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed" title={preset.description}>
+                                                          {preset.description}
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                    <button
+                                                      type="button"
+                                                      disabled={added}
+                                                      onClick={() => handleAddPresetLink(preset)}
+                                                      className={`shrink-0 p-1.5 rounded-lg cursor-pointer transition select-none flex items-center justify-center mt-1 ${
+                                                        added
+                                                          ? 'bg-slate-50 dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 border border-transparent cursor-not-allowed opacity-80'
+                                                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-755 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 dark:text-indigo-400 border border-indigo-100/40 dark:border-indigo-900/30 shadow-2xs hover:scale-105 active:scale-95'
+                                                      }`}
+                                                      title={added ? "已添加" : "一键添加外部链接"}
+                                                    >
+                                                      {added ? (
+                                                        <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                                                      ) : (
+                                                        <Plus className="w-3.5 h-3.5 stroke-[2.5px]" />
+                                                      )}
+                                                    </button>
+                                                  </div>
+                                                );
+                                              });
+                                            })()}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        /* Custom Add Link Form */
+                                        <form onSubmit={handleSaveOrUpdateExternalLink} className="flex flex-col gap-2.5 w-full">
+
                                 <div className="grid grid-cols-2 gap-2">
                                   <div className="flex flex-col gap-1">
+                                    <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400">名称 *</label>
                                     <input
                                       type="text"
                                       required
-                                      placeholder="名称，如: 百度学术"
+                                      placeholder="比如: 百度学术"
                                       value={newLinkName}
                                       onChange={(e) => setNewLinkName(e.target.value)}
-                                      className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-slate-800 dark:text-slate-100 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                      className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                                     />
                                   </div>
                                   <div className="flex flex-col gap-1">
+                                    <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400">网址 *</label>
                                     <input
                                       type="text"
                                       required
-                                      placeholder="网址，如: baidu.com"
+                                      placeholder="baidu.com"
                                       value={newLinkUrl}
                                       onChange={(e) => setNewLinkUrl(e.target.value)}
-                                      className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-slate-800 dark:text-slate-100 font-mono focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                      className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-mono placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                                     />
                                   </div>
                                 </div>
- 
+
                                 <div className="flex flex-col gap-1">
+                                  <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400">简短说明 (可选)</label>
                                   <input
                                     type="text"
-                                    placeholder="简要说明或备注用途..."
+                                    placeholder="对该外部快捷工具的描述..."
                                     value={newLinkDesc}
                                     onChange={(e) => setNewLinkDesc(e.target.value)}
-                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-slate-800 dark:text-slate-100 font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full text-xs px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400 dark:placeholder:text-zinc-500"
                                   />
                                 </div>
 
-                                <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/40 dark:border-slate-800 border-dashed">
-                                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                                    <input
-                                      type="checkbox"
-                                      checked={newLinkUseFavicon}
-                                      onChange={(e) => setNewLinkUseFavicon(e.target.checked)}
-                                      className="rounded border-slate-300 dark:border-slate-750 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer accent-indigo-600"
-                                    />
-                                    <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">优先使用抓取的网站 Favicon (不勾选则显示生成的彩色字母图标)</span>
-                                  </label>
-                                  
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 shrink-0">生成图标文字:</span>
-                                    <input
-                                      type="text"
-                                      maxLength={4}
-                                      placeholder="默认切前1-2字"
-                                      value={newLinkIconText}
-                                      onChange={(e) => setNewLinkIconText(e.target.value)}
-                                      className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
-                                      title="当未启用或无法抓取 Favicon 时，生成图标内显示的 1-4 位自定义字符"
-                                    />
+                                <div className="flex flex-col gap-1.5 mt-0.5 pb-1 border-b border-slate-200/45 dark:border-slate-800 border-dashed">
+                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">图标展示方式:</span>
+                                  <div className="grid grid-cols-3 gap-1 bg-slate-50/80 dark:bg-slate-950 p-1 border border-slate-200/50 dark:border-slate-800 rounded-lg">
+                                    {[
+                                      { key: 'favicon', label: '网站 Favicon' },
+                                      { key: 'emoji', label: 'Emoji 图标' },
+                                      { key: 'text', label: '自定义文字' }
+                                    ].map((tab) => (
+                                      <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => setNewLinkIconType(tab.key as any)}
+                                        className={`py-1 text-[10px] font-bold rounded-md transition cursor-pointer text-center ${
+                                          newLinkIconType === tab.key
+                                            ? 'bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold shadow-2xs'
+                                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                      >
+                                        {tab.label}
+                                      </button>
+                                    ))}
                                   </div>
+
+                                  {newLinkIconType === 'emoji' && (
+                                    <div className="flex flex-col gap-1.5 mt-1 animate-fade-in relative">
+                                      <div className="flex flex-row items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 shrink-0">输入或选择 Emoji:</span>
+                                        <input
+                                          type="text"
+                                          maxLength={2}
+                                          placeholder="🚀"
+                                          value={newLinkEmoji}
+                                          onChange={(e) => {
+                                            setNewLinkEmoji(e.target.value);
+                                            setShowEmojiPicker(false);
+                                          }}
+                                          className="w-12 text-xs px-2 py-0.5 text-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-zinc-100 font-medium font-emoji"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                          className="py-1 px-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-650 dark:text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-100/40 dark:border-indigo-900/30 transition cursor-pointer flex items-center justify-center gap-1 select-none active:scale-95"
+                                        >
+                                          <span>🤩 弹出完整表情库</span>
+                                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-250 ${showEmojiPicker ? 'rotate-180' : ''}`} />
+                                        </button>
+                                      </div>
+
+                                      {showEmojiPicker && (
+                                        <>
+                                          <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                                          <div className="absolute right-0 top-full mt-2 z-50 shadow-2xl border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden emoji-picker-container bg-white dark:bg-zinc-950">
+                                            <Picker 
+                                              data={emojiData} 
+                                              onEmojiSelect={(emoji: any) => {
+                                                setNewLinkEmoji(emoji.native);
+                                                setShowEmojiPicker(false);
+                                              }} 
+                                              theme={isDarkMode ? 'dark' : 'light'}
+                                              previewPosition="none"
+                                              skinPosition="none"
+                                              navPosition="bottom"
+                                              perLine={8}
+                                              maxFrequentRows={1}
+                                            />
+                                          </div>
+                                        </>
+                                      )}
+
+                                      <div className="flex flex-wrap gap-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 p-1.5 rounded-lg max-h-[72px] overflow-y-auto w-full">
+                                        {['🚀', '💻', '🧠', '📊', '📧', '🌐', '📚', '💡', '🛠️', '🔬', '🎓', '🪐', '🎨', '🔥', '⚙️', '🔍'].map((em) => (
+                                          <button
+                                            key={em}
+                                            type="button"
+                                            onClick={() => {
+                                              setNewLinkEmoji(em);
+                                              setShowEmojiPicker(false);
+                                            }}
+                                            className={`w-7 h-7 text-sm rounded-md transition cursor-pointer flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 border ${
+                                              newLinkEmoji === em 
+                                                ? 'bg-white dark:bg-slate-900 border-indigo-500/70 scale-105 shadow-2xs' 
+                                                : 'border-transparent'
+                                            }`}
+                                          >
+                                            {em}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {newLinkIconType === 'text' && (
+                                    <div className="flex flex-col gap-1.5 mt-1 animate-fade-in">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 shrink-0">文字内容:</span>
+                                        <input
+                                          type="text"
+                                          maxLength={4}
+                                          placeholder="例：学术, AI"
+                                          value={newLinkIconText}
+                                          onChange={(e) => setNewLinkIconText(e.target.value)}
+                                          className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {(newLinkIconType === 'emoji' || newLinkIconType === 'text') && (
+                                    <div className="flex flex-col gap-1.5 mt-1.5 animate-fade-in">
+                                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">选择图标配色:</span>
+                                      <div className="flex flex-wrap gap-2 mt-0.5">
+                                        {Object.entries({
+                                          teal: { label: '青绿', bg: 'bg-gradient-to-br from-teal-500 to-emerald-600' },
+                                          indigo: { label: '靛蓝', bg: 'bg-gradient-to-br from-indigo-500 to-purple-600' },
+                                          blue: { label: '蓝色', bg: 'bg-gradient-to-br from-blue-500 to-cyan-600' },
+                                          rose: { label: '玫瑰', bg: 'bg-gradient-to-br from-rose-500 to-pink-600' },
+                                          amber: { label: '琥珀', bg: 'bg-gradient-to-br from-amber-500 to-orange-600' },
+                                          violet: { label: '紫色', bg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600' },
+                                          emerald: { label: '硬绿', bg: 'bg-gradient-to-br from-emerald-500 to-green-600' },
+                                          slate: { label: '石板', bg: 'bg-gradient-to-br from-slate-500 to-slate-600' },
+                                        }).map(([colorKey, info]) => (
+                                          <button
+                                            key={colorKey}
+                                            type="button"
+                                            onClick={() => setNewLinkCustomColor(colorKey)}
+                                            className={`w-5.5 h-5.5 rounded-full ${info.bg} relative transition-all duration-200 cursor-pointer shadow-xs border focus:outline-hidden ${
+                                              newLinkCustomColor === colorKey 
+                                                ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-950 scale-110 border-white dark:border-zinc-900' 
+                                                : 'hover:scale-105 border-transparent'
+                                            }`}
+                                            title={info.label}
+                                          >
+                                            {newLinkCustomColor === colorKey && (
+                                              <span className="absolute inset-0 flex items-center justify-center">
+                                                <Check className="w-2.5 h-2.5 text-white stroke-[3px]" />
+                                              </span>
+                                            )}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
- 
-                                <div className="flex items-center justify-between gap-1.5 p-1 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg">
+
+                                <div className="flex items-center justify-between gap-1.5 mt-1 p-1 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg">
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate border-none">自动匹配图标:</span>
-                                    <div className="w-6 h-6 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
-                                      <ExternalFavicon url={newLinkUrl} name={newLinkName || '新'} size="sm" useFavicon={newLinkUseFavicon} iconText={newLinkIconText} />
+                                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate shrink-0">图标实时匹配及预览：</span>
+                                    <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-800 flex items-center justify-center shrink-0">
+                                      <ExternalFavicon
+                                        url={newLinkUrl}
+                                        name={newLinkName || '新'}
+                                        size="sm"
+                                        useFavicon={newLinkIconType === 'favicon'}
+                                        iconText={newLinkIconType === 'text' ? newLinkIconText : ''}
+                                        isEmoji={newLinkIconType === 'emoji'}
+                                        emoji={newLinkEmoji}
+                                        icon={autoAssignIcon(newLinkUrl, newLinkName)}
+                                        customColor={newLinkCustomColor}
+                                      />
                                     </div>
                                     <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">
                                       {autoAssignIcon(newLinkUrl, newLinkName)}
                                     </span>
                                   </div>
-                                  <button
-                                    type="submit"
-                                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-md transition-all cursor-pointer"
-                                  >
-                                    {editingLinkId ? "保存修改" : "保存"}
-                                  </button>
-                                </div>
-                              </motion.form>
-                            )}
-                          </AnimatePresence>
- 
-                          <AnimatePresence initial={false}>
-                            {isExternalShortcutExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
-                                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                                transition={{ duration: 0.2, ease: "easeInOut" }}
-                                className="overflow-hidden"
-                              >
+                                            <button
+                                              type="submit"
+                                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-755 text-white text-[10px] font-bold rounded-md transition-all shadow-xs cursor-pointer shrink-0"
+                                            >
+                                              {editingLinkId ? "保存修改" : "录入"}
+                                            </button>
+                                          </div>
+                                        </form>
+                                      )}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+
                                 <div className="grid grid-cols-2 gap-3 pt-0.5">
                                   {externalLinks.map(ext => (
                                     <div key={ext.id} className="relative group/parent">
@@ -1884,7 +2614,17 @@ export default function App() {
                                         title={isEditModeActive ? `编辑: ${ext.name}` : `点击跳转至: ${ext.url}\n${ext.description}`}
                                       >
                                         <div className="p-1.5 bg-slate-50 dark:bg-zinc-800/85 border border-slate-100 dark:border-zinc-700/65 rounded-lg group-hover/ext:bg-indigo-50/55 dark:group-hover:bg-indigo-950/40 group-hover/ext:border-indigo-100 dark:group-hover:border-indigo-800 transition-colors flex items-center justify-center shrink-0">
-                                          <ExternalFavicon url={ext.url} name={ext.name} size="md" useFavicon={ext.useFavicon !== false} iconText={ext.iconText} />
+                                          <ExternalFavicon
+                                            url={ext.url}
+                                            name={ext.name}
+                                            size="md"
+                                            useFavicon={ext.useFavicon !== false}
+                                            iconText={ext.iconText}
+                                            isEmoji={ext.isEmoji}
+                                            emoji={ext.emoji}
+                                            icon={ext.icon}
+                                            customColor={ext.customColor}
+                                          />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                           <div className="text-xs font-bold text-slate-800 dark:text-zinc-200 group-hover/ext:text-indigo-600 dark:group-hover/ext:text-indigo-400 transition-colors tracking-tight flex items-center gap-0.5">

@@ -4,6 +4,44 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import {
+  StickyNote,
+  FolderClosed,
+  Cpu,
+  Code,
+  Layers,
+  GitBranch,
+  Gauge,
+  Github,
+  Mail,
+  Sparkles,
+  Package,
+  FileText,
+  ExternalLink,
+  Activity
+} from 'lucide-react';
+
+const iconMap: Record<string, React.ComponentType<any>> = {
+  StickyNote,
+  FolderClosed,
+  Cpu,
+  Code,
+  Layers,
+  GitBranch,
+  Gauge,
+  Github,
+  Mail,
+  Sparkles,
+  Package,
+  FileText,
+  ExternalLink,
+  Activity
+};
+
+export const getLucideIconElement = (iconName: string, className: string) => {
+  const IconComponent = iconMap[iconName] || ExternalLink;
+  return <IconComponent className={className} />;
+};
 
 interface ExternalFaviconProps {
   url: string;
@@ -11,6 +49,10 @@ interface ExternalFaviconProps {
   size?: 'sm' | 'md' | 'lg';
   useFavicon?: boolean;
   iconText?: string;
+  isEmoji?: boolean;
+  emoji?: string;
+  icon?: string;
+  customColor?: string;
 }
 
 /**
@@ -24,7 +66,7 @@ export const getFallbackText = (name: string): string => {
   const chineseRegex = /^[\u4e00-\u9fa5]+/;
   const chineseMatch = trimmed.match(chineseRegex);
   if (chineseMatch) {
-    // Return first 2 Chinese characters (e.g., "学校", "海大")
+    // Return first 1-2 Chinese characters (e.g., "学校", "海大")
     return chineseMatch[0].slice(0, 2);
   }
 
@@ -48,9 +90,24 @@ export const getFallbackText = (name: string): string => {
 
 /**
  * Generates a consistent, visually distinctive modern gradient and shadow configuration
- * based on the hash value of the site's name.
+ * based on the hash value of the site's name or a custom chosen color key.
  */
-export const getGradientForText = (name: string): string => {
+export const getGradientForText = (name: string, customColor?: string): string => {
+  const gradientMap: Record<string, string> = {
+    teal: 'from-teal-500 to-emerald-600 text-teal-50 shadow-xs ring-1 ring-teal-500/20',
+    indigo: 'from-indigo-500 to-purple-600 text-indigo-50 shadow-xs ring-1 ring-indigo-500/20',
+    blue: 'from-blue-500 to-cyan-600 text-blue-50 shadow-xs ring-1 ring-blue-500/20',
+    rose: 'from-rose-500 to-pink-600 text-rose-50 shadow-xs ring-1 ring-rose-500/20',
+    amber: 'from-amber-500 to-orange-600 text-amber-50 shadow-xs ring-1 ring-amber-500/20',
+    violet: 'from-violet-500 to-fuchsia-600 text-violet-50 shadow-xs ring-1 ring-violet-500/20',
+    emerald: 'from-emerald-500 to-green-600 text-emerald-50 shadow-xs ring-1 ring-emerald-500/20',
+    slate: 'from-slate-500 to-slate-600 text-slate-50 shadow-xs ring-1 ring-slate-500/20',
+  };
+
+  if (customColor && gradientMap[customColor]) {
+    return gradientMap[customColor];
+  }
+
   const gradients = [
     'from-teal-500 to-emerald-600 text-teal-50 shadow-xs ring-1 ring-teal-500/20',
     'from-indigo-500 to-purple-600 text-indigo-50 shadow-xs ring-1 ring-indigo-500/20',
@@ -69,7 +126,17 @@ export const getGradientForText = (name: string): string => {
   return gradients[index];
 };
 
-export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({ url, name, size = 'md', useFavicon = true, iconText }) => {
+export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({
+  url,
+  name,
+  size = 'md',
+  useFavicon = true,
+  iconText,
+  isEmoji = false,
+  emoji,
+  icon,
+  customColor
+}) => {
   const [attempt, setAttempt] = useState(0);
   const [domain, setDomain] = useState('');
 
@@ -80,63 +147,119 @@ export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({ url, name, siz
         sanitized = 'https://' + sanitized;
       }
       const parsedUrl = new URL(sanitized);
-      // Remove www.
       const hostname = parsedUrl.hostname.replace(/^www\./i, '');
       setDomain(hostname);
     } catch {
       setDomain('');
     }
-    // Reset attempt whenever url/domain changes to re-fetch
     setAttempt(0);
   }, [url]);
 
   const fallbackText = iconText && iconText.trim() ? iconText.trim().slice(0, 4) : getFallbackText(name);
-  const bgGradientClass = getGradientForText(name);
+  const bgGradientClass = getGradientForText(name, customColor);
 
-  // Match sizes to existing custom styles (with Inter / Mono modern feeling, uppercase characters)
   const sizeClasses = {
     lg: {
-      wrapper: 'w-7.5 h-7.5 flex items-center justify-center shrink-0',
-      img: 'w-7.5 h-7.5 object-contain rounded-md',
-      text: 'w-7.5 h-7.5 text-[10px] font-sans font-black tracking-tight flex items-center justify-center rounded-md select-none'
+      wrapper: 'w-10 h-10 flex items-center justify-center shrink-0',
+      img: 'w-10 h-10 object-contain rounded-xl',
+      text: 'w-10 h-10 text-xs font-sans font-black tracking-normal flex items-center justify-center rounded-xl select-none',
+      icon: 'w-5.5 h-5.5 text-white'
     },
     md: {
-      wrapper: 'w-4.5 h-4.5 flex items-center justify-center shrink-0',
-      img: 'w-4.5 h-4.5 object-contain rounded-sm',
-      text: 'w-4.5 h-4.5 text-[8px] font-sans font-black tracking-tighter flex items-center justify-center rounded-xs select-none'
+      wrapper: 'w-8 h-8 flex items-center justify-center shrink-0',
+      img: 'w-8 h-8 object-contain rounded-lg',
+      text: 'w-8 h-8 text-[11px] font-sans font-black tracking-tighter flex items-center justify-center rounded-lg select-none',
+      icon: 'w-4.5 h-4.5 text-white'
     },
     sm: {
-      wrapper: 'w-3.5 h-3.5 flex items-center justify-center shrink-0',
-      img: 'w-3.5 h-3.5 object-contain rounded-xs',
-      text: 'w-3.5 h-3.5 text-[7px] font-sans font-black tracking-tighter flex items-center justify-center rounded-2xs select-none'
+      wrapper: 'w-6 h-6 flex items-center justify-center shrink-0',
+      img: 'w-6 h-6 object-contain rounded-md',
+      text: 'w-6 h-6 text-[8px] font-sans font-black tracking-tighter flex items-center justify-center rounded-md select-none',
+      icon: 'w-3.5 h-3.5 text-white'
     }
   };
 
   const activeSize = sizeClasses[size];
 
-  // If we shouldn't use external favicons, or if there's no valid domain name extracted, show text fallback immediately
-  if (!useFavicon || !domain) {
+  // Render Emoji directly when isEmoji is true, bypassing favicon loading and without colored background
+  if (isEmoji && emoji) {
+    const emojiSizes = {
+      lg: 'text-[32px] leading-none',
+      md: 'text-[24px] leading-none',
+      sm: 'text-[18px] leading-none'
+    };
+    const emojiSizeClass = emojiSizes[size] || 'text-[24px] leading-none';
+    return (
+      <div className={`${activeSize.wrapper} bg-transparent border-0 select-none flex items-center justify-center font-emoji`}>
+        <span className={emojiSizeClass}>
+          {emoji}
+        </span>
+      </div>
+    );
+  }
+
+  // Helper to render beautiful colored text fallback or fallback icon (Emoji, Lucide)
+  const renderFallback = () => {
+    // 1. Emoji Mode
+    if (isEmoji && emoji) {
+      return (
+        <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
+          <span className={size === 'lg' ? 'text-lg' : size === 'md' ? 'text-base' : 'text-xs'}>
+            {emoji}
+          </span>
+        </div>
+      );
+    }
+
+    // 2. Custom initials if iconText exists
+    if (iconText && iconText.trim()) {
+      return (
+        <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
+          {iconText.trim().slice(0, 4)}
+        </div>
+      );
+    }
+
+    // 3. Automatically matched system icon
+    if (icon && icon !== 'ExternalLink') {
+      return (
+        <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
+          {getLucideIconElement(icon, activeSize.icon)}
+        </div>
+      );
+    }
+
+    // 4. Default assigned icon or generic text initials
+    if (icon) {
+      return (
+        <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
+          {getLucideIconElement(icon, activeSize.icon)}
+        </div>
+      );
+    }
+
     return (
       <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
         {fallbackText}
       </div>
     );
+  };
+
+  // If useFavicon is false or domain couldn't be parsed, use fallback immediately
+  if (!useFavicon || !domain) {
+    return renderFallback();
   }
 
   // Favicon URLs sourcing algorithm
   const getFaviconUrl = (index: number): string => {
     switch (index) {
       case 0:
-        // 1. Direct fetch to domain's root favicon file – highly accurate for intranet subdomains or VPN services
         return `https://${domain}/favicon.ico`;
       case 1:
-        // 2. Google's secure high-fidelity s2 favicon indexer
         return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
       case 2:
-        // 3. DuckDuckGo API
         return `https://favicon.duckduckgo.com/ip2/${domain}.ico`;
       case 3:
-        // 4. Icon Horse API
         return `https://icon.horse/icon/${domain}`;
       default:
         return '';
@@ -145,17 +268,12 @@ export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({ url, name, siz
 
   const currentSrc = getFaviconUrl(attempt);
 
-  // If we exhausted all 4 favicon sources, fall back to the text component
+  // If we exhausted all sources, use fallback rendering
   if (attempt >= 4 || !currentSrc) {
-    return (
-      <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
-        {fallbackText}
-      </div>
-    );
+    return renderFallback();
   }
 
   const handleImgError = () => {
-    // Failover: Increment attempts to try subsequent URL
     setAttempt(prev => prev + 1);
   };
 

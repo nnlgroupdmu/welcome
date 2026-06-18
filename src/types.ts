@@ -30,6 +30,9 @@ export interface ExternalLinkAsset {
   url: string;
   useFavicon?: boolean;
   iconText?: string;
+  isEmoji?: boolean;
+  emoji?: string;
+  customColor?: string;
 }
 
 export interface MemoPost {

@@ -38,6 +38,15 @@ export default defineConfig(() => {
             if (id.includes('node_modules/lucide-react/') || id.includes('node_modules/micromark/')) {
               return 'vendor-utils';
             }
+            // 将 emoji-mart 相关的所有依赖单独打包到一个名叫 vendor-emoji 的文件中
+            if (id.includes('node_modules/emoji-mart') || id.includes('node_modules/@emoji-mart')) {
+              return 'vendor-emoji';
+            }
+            
+            // 如果你还用了 lucide-react 或其他大图标库，也可以单独分包出来
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
           }
         }
       }

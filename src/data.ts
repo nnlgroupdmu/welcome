@@ -128,6 +128,159 @@ export const DEFAULT_EXTERNAL_LINKS: ExternalLinkAsset[] = [
   }
 ];
 
+export interface PresetLink {
+  name: string;
+  description: string;
+  url: string;
+  useFavicon?: boolean;
+  isEmoji?: boolean;
+  emoji?: string;
+  iconText?: string;
+  customColor?: string;
+  category: string;
+}
+
+export const PRESET_EXTERNAL_LINKS: PresetLink[] = [
+  // AI 智能助手
+  {
+    name: 'DeepSeek',
+    description: '幻方量化旗下超强国产、极高性价比大模型服务。',
+    url: 'https://www.deepseek.com',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '🧠',
+    category: 'AI 智能助手'
+  },
+  {
+    name: 'Kimi Chat',
+    description: '暗月轻量长文本国产 AI 助手，支持超长文本分析。',
+    url: 'https://kimi.moonshot.cn',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '💬',
+    category: 'AI 智能助手'
+  },
+  {
+    name: 'Claude AI',
+    description: 'Anthropic 开发的艺术与编码逻辑顶尖的 AI 写作助手。',
+    url: 'https://claude.ai',
+    useFavicon: true,
+    category: 'AI 智能助手'
+  },
+  {
+    name: 'DeepL 智能翻译',
+    description: '极其精准、自然流畅的 AI 神经网络多语种全文翻译工具。',
+    url: 'https://www.deepl.com/translator',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '🌐',
+    category: 'AI 智能助手'
+  },
+  // 学术/科研检索
+  {
+    name: 'Connected Papers',
+    description: '一键生成论文引用网络、相似文献关联图谱的可视化平台。',
+    url: 'https://www.connectedpapers.com',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '🕸️',
+    category: '学术/科研检索'
+  },
+  {
+    name: 'Sci-Hub',
+    description: '打开科学大门，提供免费学术论文全文下载的检索利器。',
+    url: 'https://sci-hub.se',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '🦅',
+    category: '学术/科研检索'
+  },
+  {
+    name: '谷歌学术 Scholar',
+    description: '全球范围权威学术文献、论文专利的多学科检索平台。',
+    url: 'https://scholar.google.com',
+    useFavicon: true,
+    category: '学术/科研检索'
+  },
+  {
+    name: 'DBLP 计算机文献库',
+    description: '计算机科学领域的开放英文文献集成数据库及会刊检索。',
+    url: 'https://dblp.org',
+    useFavicon: false,
+    iconText: 'DBLP',
+    customColor: 'blue',
+    category: '学术/科研检索'
+  },
+  // 实用绘图/效率
+  {
+    name: 'ProcessOn 脑图',
+    description: '免费、高效的在线思维导图与专业系统流程图绘制平台。',
+    url: 'https://www.processon.com',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '💡',
+    category: '实用绘图/效率'
+  },
+  {
+    name: 'TinyPNG 压图',
+    description: '极其优秀的智能 WebP/PNG/JPG 无损高压压缩熊猫工具。',
+    url: 'https://tinypng.com',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '🐼',
+    category: '实用绘图/效率'
+  },
+  {
+    name: 'Excalidraw 手绘白板',
+    description: '高颜值、手绘风格的多人在线轻量白板工具，极易上手。',
+    url: 'https://excalidraw.com',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '🎨',
+    category: '实用绘图/效率'
+  },
+  {
+    name: 'Carbon 代码美化',
+    description: '为你的代码段一键生成极其精美的高清效果展示截图。',
+    url: 'https://carbon.now.sh',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '💻',
+    category: '实用绘图/效率'
+  },
+  // 开发辅助/分享
+  {
+    name: 'GitHub 开源社区',
+    description: '全球最大的开源代码及版本控制项目托管、社区交流平台。',
+    url: 'https://github.com',
+    useFavicon: true,
+    category: '开发辅助/分享'
+  },
+  {
+    name: 'MDN Web 开发指南',
+    description: '权威详尽的 HTML、CSS、JS 等前端开发核心标准技术文档。',
+    url: 'https://developer.mozilla.org',
+    useFavicon: true,
+    category: '开发辅助/分享'
+  },
+  {
+    name: 'Stack Overflow 社区',
+    description: '全球计算机程序员及开发者的问答社区和知名漏洞解决库。',
+    url: 'https://stackoverflow.com',
+    useFavicon: true,
+    category: '开发辅助/分享'
+  },
+  {
+    name: 'Bilibili B站',
+    description: '国内最火的技术分享课程、学术讲座与优质视频弹幕站。',
+    url: 'https://www.bilibili.com',
+    useFavicon: false,
+    isEmoji: true,
+    emoji: '📺',
+    category: '开发辅助/分享'
+  }
+];
+
 export const DEFAULT_MEMOS: MemoPost[] = [
   {
     id: 'memo-1',
