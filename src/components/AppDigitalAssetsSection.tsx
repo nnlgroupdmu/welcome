@@ -71,6 +71,17 @@ const ICON_TYPE_OPTIONS: Array<{ key: LinkIconType; label: string }> = [
   { key: 'text', label: '自定义文字' },
 ];
 
+const PRESET_EMOJI_OPTIONS = [
+  // 科技、开发、AI 工具
+  '🚀', '💻', '🧠', '🌐', '🛠️', '⚙️', '🔍', '⚡', '🔒', '🤖', '📦', '🖥️',
+  // 数据、办公、文档
+  '📊', '📧', '📚', '💡', '📑', '📅', '📧', '📶', '📱', '📵', '📜', '⌨️',
+  // 娱乐、媒体、设计
+  '🎨', '🔥', '🎀', '🎍', '🎃', '📙', '💬', '✨', '❤️', '🍖', '📳', '🙵',
+  // 学习、生活、综合
+  '🔬', '🎓', '🪐', '🏔', '🛹', '💸', '🏳', '🗇', '☁', '🌡', '👃', 'ℹ️',
+];
+
 export function AppDigitalAssetsSection({
   activeAddTab,
   activePresetCategory,
@@ -594,16 +605,7 @@ export function AppDigitalAssetsSection({
                                   )}
 
                                   <div className="flex flex-wrap gap-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 p-1.5 rounded-lg max-h-[72px] overflow-y-auto w-full">
-                                    {[
-                                      // 💻 科技、开发、AI工具 (适合：Github、ChatGPT、技术博客、内网系统)
-                                      '🚀', '💻', '🧠', '🌐', '🛠️', '⚙️', '🔍', '⚡', '🔒', '🤖', '📦', '🖥️',
-                                      // 📊 数据、办公、文档 (适合：Notion、飞书、Excel、看板、云盘)
-                                      '📊', '📧', '📚', '💡', '📝', '📅', '📁', '📌', '📈', '📋', '📥', '🗂️',
-                                      // 🎨 娱乐、媒体、设计 (适合：B站、YouTube、Figma、Dribbble、社区论坛)
-                                      '🎨', '🔥', '🎬', '🎵', '🎮', '📢', '💬', '🌟', '❤️', '🍿', '📸', '💎',
-                                      // 🏫 学习、生活、综合 (适合：官网、文档、生活服务、财务、打卡)
-                                      '🔬', '🎓', '🪐', '🏠', '🛍️', '💳', '🏆', '🗺️', '☕', '🌱', '👥', 'ℹ️'
-                                    ].map((em) => (
+                                    {PRESET_EMOJI_OPTIONS.map((em) => (
                                       <button
                                         key={em}
                                         type="button"
@@ -688,7 +690,7 @@ export function AppDigitalAssetsSection({
                                     isEmoji={newLinkIconType === 'emoji'}
                                     emoji={newLinkEmoji}
                                     icon={autoAssignIcon(newLinkUrl, newLinkName)}
-                                    customColor={newLinkCustomColor}
+                                    customColor={newLinkIconType === 'text' ? newLinkCustomColor : undefined}
                                   />
                                 </div>
                                 <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">
@@ -1228,7 +1230,7 @@ export function AppDigitalAssetsSection({
                                           )}
 
                                           <div className="flex flex-wrap gap-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 p-1.5 rounded-lg max-h-[72px] overflow-y-auto w-full">
-                                            {['🚀', '💻', '🧠', '📊', '📧', '🌐', '📚', '💡', '🛠️', '🔬', '🎓', '🪐', '🎨', '🔥', '⚙️', '🔍'].map((em) => (
+                                            {PRESET_EMOJI_OPTIONS.map((em) => (
                                               <button
                                                 key={em}
                                                 type="button"
@@ -1264,7 +1266,7 @@ export function AppDigitalAssetsSection({
                                         </div>
                                       )}
 
-                                      {(newLinkIconType === 'emoji' || newLinkIconType === 'text') && (
+                                      {newLinkIconType === 'text' && (
                                         <div className="flex flex-col gap-1.5 mt-1.5 animate-fade-in">
                                           <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">选择图标配色:</span>
                                           <div className="flex flex-wrap gap-2 mt-0.5">
@@ -1313,7 +1315,7 @@ export function AppDigitalAssetsSection({
                                             isEmoji={newLinkIconType === 'emoji'}
                                             emoji={newLinkEmoji}
                                             icon={autoAssignIcon(newLinkUrl, newLinkName)}
-                                            customColor={newLinkCustomColor}
+                                            customColor={newLinkIconType === 'text' ? newLinkCustomColor : undefined}
                                           />
                                         </div>
                                         <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">

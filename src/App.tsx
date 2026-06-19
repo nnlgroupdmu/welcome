@@ -211,7 +211,7 @@ export default function App() {
     const isEmoji = newLinkIconType === 'emoji';
     const finalEmoji = isEmoji ? newLinkEmoji : undefined;
     const finalIconText = newLinkIconType === 'text' ? (newLinkIconText.trim() || undefined) : undefined;
-    const customColor = (newLinkIconType === 'emoji' || newLinkIconType === 'text') ? newLinkCustomColor : undefined;
+    const customColor = newLinkIconType === 'text' ? newLinkCustomColor : undefined;
 
     if (editingLinkId) {
       // Update Mode
