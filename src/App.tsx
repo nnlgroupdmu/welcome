@@ -62,8 +62,8 @@ import Markdown from 'react-markdown';
 import { GpuMonitor } from './components/GpuMonitor';
 import { ExternalFavicon } from './components/ExternalFavicon';
 
-import emojiData from '@emoji-mart/data';
-import Picker from '@emoji-mart/react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import zhEmojiData from 'emoji-picker-react/dist/data/emojis-zh';
 
 
 export default function App() {
@@ -715,6 +715,22 @@ export default function App() {
   // Dynamic navigation categories generated from actually defined navItems!
   const allNavCategories = ['全部', ...Array.from(new Set(navItems.flatMap(item => item.categories || [])))];
 
+  const handleEmojiPickerClick = (emojiData: { emoji: string }) => {
+    setNewLinkEmoji(emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const emojiPickerProps = {
+    emojiData: zhEmojiData,
+    theme: isDarkMode ? Theme.DARK : Theme.LIGHT,
+    previewConfig: { showPreview: false },
+    skinTonesDisabled: true,
+    searchPlaceholder: '搜索 Emoji',
+    width: 320,
+    height: 380,
+    lazyLoadEmojis: true
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-800 dark:text-zinc-200 font-sans tech-grid-bg antialiased selection:bg-teal-500 selection:text-white pb-16 transition-colors duration-200">
 
@@ -1091,7 +1107,7 @@ export default function App() {
                     <Laptop className="w-5 h-5" />
                   </span>
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">站内专区</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">文档教程</h3>
                     <p className="text-xs text-slate-400 dark:text-zinc-500">环境配置、资源使用规则和技术手册</p>
                   </div>
                 </div>
@@ -1363,8 +1379,8 @@ export default function App() {
                       <Layers className="w-5 h-5" />
                     </span>
                     <div className="min-w-0">
-                      <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">内网专区</h3>
-                      <p className="text-xs text-slate-400 dark:text-zinc-500 truncate md:whitespace-normal">切换内网类型开关，将自动改变站内跳转连接，一键跳转工具组件。</p>
+                      <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">快捷应用</h3>
+                      <p className="text-xs text-slate-400 dark:text-zinc-500 truncate md:whitespace-normal">切换内网类型开关，一键跳转内网、外部应用。</p>
                     </div>
                   </div>
 
@@ -1819,7 +1835,7 @@ export default function App() {
                                         onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                                         className="py-1 px-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-650 dark:text-indigo-400 text-[10px] font-bold rounded-lg border border-indigo-100/40 dark:border-indigo-900/30 transition cursor-pointer flex items-center justify-center gap-1 select-none active:scale-95"
                                       >
-                                        <span>🤩 弹出完整表情库</span>
+                                        <span>🤩 更多 Emoji 表情</span>
                                         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-250 ${showEmojiPicker ? 'rotate-180' : ''}`} />
                                       </button>
                                     </div>
@@ -1828,18 +1844,9 @@ export default function App() {
                                       <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
                                         <div className="absolute right-0 top-full mt-2 z-50 shadow-2xl border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden emoji-picker-container bg-white dark:bg-zinc-950">
-                                          <Picker 
-                                            data={emojiData} 
-                                            onEmojiSelect={(emoji: any) => {
-                                              setNewLinkEmoji(emoji.native);
-                                              setShowEmojiPicker(false);
-                                            }} 
-                                            theme={isDarkMode ? 'dark' : 'light'}
-                                            previewPosition="none"
-                                            skinPosition="none"
-                                            navPosition="bottom"
-                                            perLine={8}
-                                            maxFrequentRows={1}
+                                          <EmojiPicker
+                                            {...emojiPickerProps}
+                                            onEmojiClick={handleEmojiPickerClick}
                                           />
                                         </div>
                                       </>
@@ -2477,18 +2484,9 @@ export default function App() {
                                         <>
                                           <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
                                           <div className="absolute right-0 top-full mt-2 z-50 shadow-2xl border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden emoji-picker-container bg-white dark:bg-zinc-950">
-                                            <Picker 
-                                              data={emojiData} 
-                                              onEmojiSelect={(emoji: any) => {
-                                                setNewLinkEmoji(emoji.native);
-                                                setShowEmojiPicker(false);
-                                              }} 
-                                              theme={isDarkMode ? 'dark' : 'light'}
-                                              previewPosition="none"
-                                              skinPosition="none"
-                                              navPosition="bottom"
-                                              perLine={8}
-                                              maxFrequentRows={1}
+                                            <EmojiPicker
+                                              {...emojiPickerProps}
+                                              onEmojiClick={handleEmojiPickerClick}
                                             />
                                           </div>
                                         </>

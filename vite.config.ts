@@ -38,8 +38,8 @@ export default defineConfig(() => {
             if (id.includes('node_modules/lucide-react/') || id.includes('node_modules/micromark/')) {
               return 'vendor-utils';
             }
-            // 将 emoji-mart 相关的所有依赖单独打包到一个名叫 vendor-emoji 的文件中
-            if (id.includes('node_modules/emoji-mart') || id.includes('node_modules/@emoji-mart')) {
+            // 将 emoji-picker-react 相关依赖单独打包到 vendor-emoji 中
+            if (id.includes('node_modules/emoji-picker-react')) {
               return 'vendor-emoji';
             }
             
