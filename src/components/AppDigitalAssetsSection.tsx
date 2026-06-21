@@ -70,14 +70,14 @@ type AppDigitalAssetsSectionProps = {
 const ICON_TYPE_OPTIONS: Array<{ key: LinkIconType; label: string }> = [
   { key: 'favicon', label: '网站 Favicon' },
   { key: 'emoji', label: 'Emoji 图标' },
-  { key: 'text', label: '自定义文字' },
+  { key: 'text', label: '智能文字' },
 ];
 
 const PRESET_EMOJI_OPTIONS = [
   // 科技、开发、AI 工具
   '🚀', '💻', '🧠', '🌐', '🛠️', '⚙️', '🔍', '⚡', '🔒', '🤖', '📦', '🖥️',
   // 数据、办公、文档
-  '📊', '📧', '📚', '💡', '📑', '📅', '📧', '📶', '📱', '📵', '📜', '⌨️',
+  '📊', '📧', '📚', '💡', '📑', '📅', '🍵', '📶', '📱', '📵', '📜', '⌨️',
   // 娱乐、媒体、设计
   '🎨', '🔥', '🎀', '🎍', '🎃', '📙', '💬', '✨', '❤️', '🍖', '📳', '🙵',
   // 学习、生活、综合

@@ -643,17 +643,62 @@ export default function App() {
     }
   };
   const autoAssignIcon = (url: string = '', name: string = ''): string => {
-    const combined = `${url.toLowerCase()} ${name.toLowerCase()}`;
-    if (combined.includes('github') || combined.includes('git')) return 'Github';
-    if (combined.includes('mail') || combined.includes('email') || combined.includes('coremail') || combined.includes('post') || combined.includes('@') || combined.includes('letter')) return 'Mail';
-    if (combined.includes('chat') || combined.includes('gpt') || combined.includes('ai') || combined.includes('spark') || combined.includes('model') || combined.includes('huggingface') || combined.includes('hf')) return 'Sparkles';
-    if (combined.includes('yjs') || combined.includes('graduate') || combined.includes('study') || combined.includes('sys') || combined.includes('class') || combined.includes('course') || combined.includes('edu') || combined.includes('university') || combined.includes('school')) return 'Package';
-    if (combined.includes('overleaf') || combined.includes('latex') || combined.includes('doc') || combined.includes('paper') || combined.includes('write') || combined.includes('pdf') || combined.includes('text') || combined.includes('book')) return 'FileText';
-    if (combined.includes('code') || combined.includes('dev') || combined.includes('build') || combined.includes('program') || combined.includes('compile') || combined.includes('ide')) return 'Code';
-    if (combined.includes('gauge') || combined.includes('monitor') || combined.includes('status') || combined.includes('dashboard') || combined.includes('grafana') || combined.includes('metrics')) return 'Gauge';
-    if (combined.includes('folder') || combined.includes('drive') || combined.includes('cloud') || combined.includes('box') || combined.includes('pan') || combined.includes('nas')) return 'FolderClosed';
-    if (combined.includes('cpu') || combined.includes('gpu') || combined.includes('hardware') || combined.includes('server')) return 'Cpu';
-    if (combined.includes('note') || combined.includes('memo') || combined.includes('diary') || combined.includes('todo')) return 'StickyNote';
+    const normalizeUrl = (value: string) => {
+      try {
+        const withProtocol = value.trim().match(/^https?:\/\//i) ? value.trim() : `https://${value.trim()}`;
+        const parsed = new URL(withProtocol);
+        return `${parsed.hostname.replace(/^www\./i, '')}${parsed.pathname.replace(/\/+$/, '')}`.toLowerCase();
+      } catch {
+        return value.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '').toLowerCase().trim();
+      }
+    };
+
+    const normalizedUrl = normalizeUrl(url);
+    const normalizedName = name.toLowerCase().trim();
+    const combined = `${normalizedUrl} ${normalizedName}`;
+    const hasUrlInput = normalizedUrl.length > 0;
+    const hasNameInput = normalizedName.length > 0;
+    const knownLinks = [...DEFAULT_EXTERNAL_LINKS, ...PRESET_EXTERNAL_LINKS];
+    const knownMatch = knownLinks.find(item => {
+      const itemUrl = normalizeUrl(item.url);
+      const itemName = item.name.toLowerCase();
+      return Boolean(item.icon) && (
+        (hasUrlInput && (
+          normalizedUrl === itemUrl ||
+          normalizedUrl.startsWith(itemUrl) ||
+          itemUrl.startsWith(normalizedUrl)
+        )) ||
+        (hasNameInput && (
+          normalizedName === itemName ||
+          normalizedName.includes(itemName) ||
+          itemName.includes(normalizedName)
+        ))
+      );
+    });
+    if (knownMatch?.icon) return knownMatch.icon;
+
+    const hasAny = (keywords: string[]) => keywords.some(keyword => combined.includes(keyword));
+
+    if (hasAny(['deepseek', 'claude', 'anthropic', 'kimi', 'moonshot', 'chatgpt', 'openai', 'gpt', 'gemini', 'copilot', 'perplexity', 'huggingface', 'modelscope', '大模型', '模型'])) return 'Sparkles';
+    if (hasAny(['ai', 'assistant', 'bot', 'chat', '智能助手', '助手'])) return 'Sparkles';
+    if (hasAny(['translate', 'translator', 'deepl', 'youdao', 'google translate', 'fanyi', '翻译', '词典', '语言'])) return 'Languages';
+    if (hasAny(['scholar', 'semantic', 'pubmed', 'arxiv', 'research', 'search', '检索', '搜索', '学术'])) return 'Search';
+    if (hasAny(['connectedpapers', 'citation', 'cite', 'graph', 'network', 'references', '引用', '关联', '图谱'])) return 'Network';
+    if (hasAny(['dblp', 'database', 'dataset', 'kaggle', 'sql', 'db', '数据库', '数据集', '数据'])) return 'Database';
+    if (hasAny(['overleaf', 'latex', 'paper', 'pdf', 'doc', 'docs', 'document', 'write', 'markdown', 'notion', 'yuque', 'wolai', '论文', '文档', '写作', '笔记'])) return 'FileText';
+    if (hasAny(['github', 'gitlab', 'gitea', 'git', 'repo', 'repository', '代码托管', '仓库'])) return 'Github';
+    if (hasAny(['stackoverflow', 'stack overflow', 'codepen', 'codesandbox', 'carbon', 'dev', 'developer', 'code', 'program', 'compile', 'ide', 'api', 'sdk', '开发', '编程', '代码'])) return 'Code';
+    if (hasAny(['mdn', 'web.dev', 'frontend', 'html', 'css', 'javascript', 'typescript', 'react', 'vue', '前端', '网页', '网站'])) return 'PanelsTopLeft';
+    if (hasAny(['processon', 'draw.io', 'diagrams', 'diagram', 'flowchart', 'workflow', 'mindmap', 'xmind', '流程图', '脑图', '导图'])) return 'Workflow';
+    if (hasAny(['excalidraw', 'figma', 'sketch', 'draw', 'whiteboard', 'canvas', 'design', '白板', '绘图', '设计'])) return 'PenTool';
+    if (hasAny(['tinypng', 'image', 'photo', 'png', 'jpg', 'jpeg', 'webp', 'svg', 'compress', 'squoosh', '图片', '图像', '压图'])) return 'Image';
+    if (hasAny(['bilibili', 'youtube', 'video', 'media', 'movie', 'course', 'lecture', '视频', '课程', '讲座'])) return 'Video';
+    if (hasAny(['mail', 'email', 'coremail', 'webmail', 'post', '@', 'letter', '邮箱', '邮件'])) return 'Mail';
+    if (hasAny(['yjs', 'graduate', 'study', 'class', 'course', 'edu', 'university', 'school', 'portal', '教务', '研究生', '学校', '课程'])) return 'Package';
+    if (hasAny(['grafana', 'prometheus', 'metrics', 'monitor', 'dashboard', 'status', 'gauge', 'uptime', '监控', '仪表盘', '状态'])) return 'Gauge';
+    if (hasAny(['alist', 'folder', 'drive', 'cloud', 'box', 'pan', 'nas', 'storage', 'file', '网盘', '云盘', '文件', '存储'])) return 'FolderClosed';
+    if (hasAny(['cpu', 'gpu', 'nvidia', 'hardware', 'server', 'cuda', '服务器', '显卡', '硬件'])) return 'Cpu';
+    if (hasAny(['memos', 'memo', 'note', 'diary', 'todo', 'sticky', '便签', '备忘', '日记', '待办'])) return 'StickyNote';
     return 'ExternalLink';
   };
 
