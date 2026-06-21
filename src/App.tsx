@@ -104,7 +104,7 @@ export default function App() {
   // Intranet Application View mode ('list' vs 'icons' with localStorage persistence)
   const [intranetViewMode, setIntranetViewMode] = useState<'list' | 'icons'>(() => {
     const cached = localStorage.getItem('seal_intranet_view_mode');
-    return (cached as 'list' | 'icons') || 'icons';
+    return (cached as 'list' | 'icons') || 'list';
   });
 
   const handleIntranetViewModeChange = (mode: 'list' | 'icons') => {
@@ -185,6 +185,7 @@ export default function App() {
   const [newLinkUseFavicon, setNewLinkUseFavicon] = useState<boolean>(true);
   const [newLinkIconText, setNewLinkIconText] = useState<string>('');
   const [newLinkIconType, setNewLinkIconType] = useState<'favicon' | 'emoji' | 'text'>('favicon');
+  const [newLinkUseMatchedLucide, setNewLinkUseMatchedLucide] = useState<boolean>(false);
   const [newLinkEmoji, setNewLinkEmoji] = useState<string>('🚀');
   const [newLinkCustomColor, setNewLinkCustomColor] = useState<string>('teal');
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
@@ -204,13 +205,16 @@ export default function App() {
     if (!newLinkName.trim() || !newLinkUrl.trim()) return;
 
     // Smart auto assign icon
-    const assignedIcon = autoAssignIcon(newLinkUrl.trim(), newLinkName.trim());
+    const matchedIcon = autoAssignIcon(newLinkUrl.trim(), newLinkName.trim());
+    const assignedIcon = newLinkIconType === 'favicon' || (newLinkIconType === 'text' && newLinkUseMatchedLucide)
+      ? matchedIcon
+      : '';
     const finalUrl = newLinkUrl.trim().startsWith('http') ? newLinkUrl.trim() : `https://${newLinkUrl.trim()}`;
 
     const useFavicon = newLinkIconType === 'favicon';
     const isEmoji = newLinkIconType === 'emoji';
     const finalEmoji = isEmoji ? newLinkEmoji : undefined;
-    const finalIconText = newLinkIconType === 'text' ? (newLinkIconText.trim() || undefined) : undefined;
+    const finalIconText = newLinkIconType === 'text' && !newLinkUseMatchedLucide ? (newLinkIconText.trim() || undefined) : undefined;
     const customColor = newLinkIconType === 'text' ? newLinkCustomColor : undefined;
 
     if (editingLinkId) {
@@ -256,6 +260,7 @@ export default function App() {
     setNewLinkUseFavicon(true);
     setNewLinkIconText('');
     setNewLinkIconType('favicon');
+    setNewLinkUseMatchedLucide(false);
     setNewLinkEmoji('🚀');
     setNewLinkCustomColor('teal');
     setShowEmojiPicker(false);
@@ -271,12 +276,19 @@ export default function App() {
     if (ext.isEmoji) {
       setNewLinkIconType('emoji');
       setNewLinkEmoji(ext.emoji || '🚀');
+      setNewLinkUseMatchedLucide(false);
+      setNewLinkUseFavicon(false);
+    } else if (ext.iconText) {
+      setNewLinkIconType('text');
+      setNewLinkUseMatchedLucide(false);
       setNewLinkUseFavicon(false);
     } else if (ext.useFavicon) {
       setNewLinkIconType('favicon');
+      setNewLinkUseMatchedLucide(false);
       setNewLinkUseFavicon(true);
     } else {
       setNewLinkIconType('text');
+      setNewLinkUseMatchedLucide(Boolean(ext.icon));
       setNewLinkUseFavicon(false);
     }
     
@@ -294,6 +306,7 @@ export default function App() {
     setNewLinkUseFavicon(true);
     setNewLinkIconText('');
     setNewLinkIconType('favicon');
+    setNewLinkUseMatchedLucide(false);
     setNewLinkEmoji('🚀');
     setNewLinkCustomColor('teal');
     setShowEmojiPicker(false);
@@ -330,7 +343,7 @@ export default function App() {
       id: 'ext-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
       name: preset.name,
       description: preset.description,
-      icon: 'ExternalLink',
+      icon: preset.icon ?? autoAssignIcon(preset.url, preset.name),
       url: preset.url,
       useFavicon: preset.useFavicon,
       isEmoji: preset.isEmoji,
@@ -799,6 +812,7 @@ export default function App() {
               newLinkEmoji={newLinkEmoji}
               newLinkIconText={newLinkIconText}
               newLinkIconType={newLinkIconType}
+              newLinkUseMatchedLucide={newLinkUseMatchedLucide}
               newLinkName={newLinkName}
               newLinkUrl={newLinkUrl}
               presetSearchQuery={presetSearchQuery}
@@ -815,6 +829,7 @@ export default function App() {
               setNewLinkEmoji={setNewLinkEmoji}
               setNewLinkIconText={setNewLinkIconText}
               setNewLinkIconType={setNewLinkIconType}
+              setNewLinkUseMatchedLucide={setNewLinkUseMatchedLucide}
               setNewLinkName={setNewLinkName}
               setNewLinkUrl={setNewLinkUrl}
               setPresetSearchQuery={setPresetSearchQuery}

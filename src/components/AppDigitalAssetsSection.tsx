@@ -41,6 +41,7 @@ type AppDigitalAssetsSectionProps = {
   newLinkEmoji: string;
   newLinkIconText: string;
   newLinkIconType: LinkIconType;
+  newLinkUseMatchedLucide: boolean;
   newLinkName: string;
   newLinkUrl: string;
   presetSearchQuery: string;
@@ -57,6 +58,7 @@ type AppDigitalAssetsSectionProps = {
   setNewLinkEmoji: Dispatch<SetStateAction<string>>;
   setNewLinkIconText: Dispatch<SetStateAction<string>>;
   setNewLinkIconType: Dispatch<SetStateAction<LinkIconType>>;
+  setNewLinkUseMatchedLucide: Dispatch<SetStateAction<boolean>>;
   setNewLinkName: Dispatch<SetStateAction<string>>;
   setNewLinkUrl: Dispatch<SetStateAction<string>>;
   setPresetSearchQuery: Dispatch<SetStateAction<string>>;
@@ -109,6 +111,7 @@ export function AppDigitalAssetsSection({
   newLinkEmoji,
   newLinkIconText,
   newLinkIconType,
+  newLinkUseMatchedLucide,
   newLinkName,
   newLinkUrl,
   presetSearchQuery,
@@ -125,6 +128,7 @@ export function AppDigitalAssetsSection({
   setNewLinkEmoji,
   setNewLinkIconText,
   setNewLinkIconType,
+  setNewLinkUseMatchedLucide,
   setNewLinkName,
   setNewLinkUrl,
   setPresetSearchQuery,
@@ -132,6 +136,11 @@ export function AppDigitalAssetsSection({
   showEmojiPicker,
   toggleExternalShortcutExpanded,
 }: AppDigitalAssetsSectionProps) {
+  const matchedLucideIcon = autoAssignIcon(newLinkUrl, newLinkName);
+  const previewIcon = newLinkIconType === 'favicon' || (newLinkIconType === 'text' && newLinkUseMatchedLucide)
+    ? matchedLucideIcon
+    : '';
+
   return (
     <>
       <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-visible order-2 lg:order-none shrink-0">
@@ -465,7 +474,7 @@ export function AppDigitalAssetsSection({
                                             emoji={preset.emoji}
                                             iconText={preset.iconText}
                                             customColor={preset.customColor}
-                                            icon="ExternalLink"
+                                            icon={preset.icon ?? autoAssignIcon(preset.url, preset.name)}
                                           />
                                         </div>
                                         <div className="min-w-0 flex-1 flex flex-col pt-0.5 text-left">
@@ -635,9 +644,19 @@ export function AppDigitalAssetsSection({
                                       placeholder="例：学术, AI"
                                       value={newLinkIconText}
                                       onChange={(e) => setNewLinkIconText(e.target.value)}
-                                      className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
+                                      disabled={newLinkUseMatchedLucide}
+                                      className={`flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400 ${newLinkUseMatchedLucide ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     />
                                   </div>
+                                  <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={newLinkUseMatchedLucide}
+                                      onChange={(e) => setNewLinkUseMatchedLucide(e.target.checked)}
+                                      className="w-3 h-3 accent-indigo-600 cursor-pointer"
+                                    />
+                                    <span>自动匹配 Lucide icon ({matchedLucideIcon})</span>
+                                  </label>
                                 </div>
                               )}
 
@@ -686,15 +705,15 @@ export function AppDigitalAssetsSection({
                                     name={newLinkName || '新'}
                                     size="sm"
                                     useFavicon={newLinkIconType === 'favicon'}
-                                    iconText={newLinkIconType === 'text' ? newLinkIconText : ''}
+                                    iconText={newLinkIconType === 'text' && !newLinkUseMatchedLucide ? newLinkIconText : ''}
                                     isEmoji={newLinkIconType === 'emoji'}
                                     emoji={newLinkEmoji}
-                                    icon={autoAssignIcon(newLinkUrl, newLinkName)}
+                                    icon={previewIcon}
                                     customColor={newLinkIconType === 'text' ? newLinkCustomColor : undefined}
                                   />
                                 </div>
                                 <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">
-                                  {autoAssignIcon(newLinkUrl, newLinkName)}
+                                  {previewIcon || 'Text'}
                                 </span>
                               </div>
                               <button
@@ -757,7 +776,7 @@ export function AppDigitalAssetsSection({
                                         iconText={ext.iconText}
                                         isEmoji={ext.isEmoji}
                                         emoji={ext.emoji}
-                                        icon={ext.icon}
+                                        icon={ext.icon ?? autoAssignIcon(ext.url, ext.name)}
                                         customColor={ext.customColor}
                                       />
                                     </div>
@@ -1090,7 +1109,7 @@ export function AppDigitalAssetsSection({
                                                     emoji={preset.emoji}
                                                     iconText={preset.iconText}
                                                     customColor={preset.customColor}
-                                                    icon="ExternalLink"
+                                                    icon={preset.icon ?? autoAssignIcon(preset.url, preset.name)}
                                                   />
                                                 </div>
                                                 <div className="min-w-0 flex-1 flex flex-col pt-0.5 text-left">
@@ -1260,9 +1279,19 @@ export function AppDigitalAssetsSection({
                                               placeholder="例：学术, AI"
                                               value={newLinkIconText}
                                               onChange={(e) => setNewLinkIconText(e.target.value)}
-                                              className="flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400"
+                                              disabled={newLinkUseMatchedLucide}
+                                              className={`flex-1 text-[11px] px-2 py-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 font-medium placeholder:text-slate-400 ${newLinkUseMatchedLucide ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             />
                                           </div>
+                                          <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                                            <input
+                                              type="checkbox"
+                                              checked={newLinkUseMatchedLucide}
+                                              onChange={(e) => setNewLinkUseMatchedLucide(e.target.checked)}
+                                              className="w-3 h-3 accent-indigo-600 cursor-pointer"
+                                            />
+                                            <span>自动匹配 Lucide icon ({matchedLucideIcon})</span>
+                                          </label>
                                         </div>
                                       )}
 
@@ -1311,15 +1340,15 @@ export function AppDigitalAssetsSection({
                                             name={newLinkName || '新'}
                                             size="sm"
                                             useFavicon={newLinkIconType === 'favicon'}
-                                            iconText={newLinkIconType === 'text' ? newLinkIconText : ''}
+                                            iconText={newLinkIconType === 'text' && !newLinkUseMatchedLucide ? newLinkIconText : ''}
                                             isEmoji={newLinkIconType === 'emoji'}
                                             emoji={newLinkEmoji}
-                                            icon={autoAssignIcon(newLinkUrl, newLinkName)}
+                                            icon={previewIcon}
                                             customColor={newLinkIconType === 'text' ? newLinkCustomColor : undefined}
                                           />
                                         </div>
                                         <span className="text-[9px] font-mono font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 px-1 py-0.5 rounded-sm truncate">
-                                          {autoAssignIcon(newLinkUrl, newLinkName)}
+                                          {previewIcon || 'Text'}
                                         </span>
                                       </div>
                                       <button
@@ -1355,7 +1384,7 @@ export function AppDigitalAssetsSection({
                                       iconText={ext.iconText}
                                       isEmoji={ext.isEmoji}
                                       emoji={ext.emoji}
-                                      icon={ext.icon}
+                                      icon={ext.icon ?? autoAssignIcon(ext.url, ext.name)}
                                       customColor={ext.customColor}
                                     />
                                   </div>

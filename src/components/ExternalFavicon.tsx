@@ -18,7 +18,17 @@ import {
   Package,
   FileText,
   ExternalLink,
-  Activity
+  Activity,
+  Brain,
+  Languages,
+  Network,
+  Search,
+  Database,
+  Workflow,
+  Image,
+  PenTool,
+  PanelsTopLeft,
+  Video
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -35,7 +45,17 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Package,
   FileText,
   ExternalLink,
-  Activity
+  Activity,
+  Brain,
+  Languages,
+  Network,
+  Search,
+  Database,
+  Workflow,
+  Image,
+  PenTool,
+  PanelsTopLeft,
+  Video
 };
 
 export const getLucideIconElement = (iconName: string, className: string) => {
@@ -220,16 +240,7 @@ export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({
       );
     }
 
-    // 3. Automatically matched system icon
-    if (icon && icon !== 'ExternalLink') {
-      return (
-        <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
-          {getLucideIconElement(icon, activeSize.icon)}
-        </div>
-      );
-    }
-
-    // 4. Default assigned icon or generic text initials
+    // 3. Preset, selected, or automatically matched Lucide icon
     if (icon) {
       return (
         <div className={`${activeSize.text} bg-gradient-to-br ${bgGradientClass}`}>
