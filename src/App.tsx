@@ -237,6 +237,7 @@ export default function App() {
         return item;
       }));
       setEditingLinkId(null);
+      setIsEditModeActive(false);
     } else {
       // Create Mode
       const newLink: ExternalLinkAsset = {
@@ -265,6 +266,21 @@ export default function App() {
     setNewLinkCustomColor('teal');
     setShowEmojiPicker(false);
     setIsAddingLink(false);
+  };
+
+  const handleReorderExternalLinks = (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+
+    setExternalLinks(prev => {
+      const draggedIndex = prev.findIndex(item => item.id === draggedId);
+      const targetIndex = prev.findIndex(item => item.id === targetId);
+      if (draggedIndex === -1 || targetIndex === -1) return prev;
+
+      const next = [...prev];
+      const [draggedItem] = next.splice(draggedIndex, 1);
+      next.splice(targetIndex, 0, draggedItem);
+      return next;
+    });
   };
 
   const handleStartEditExternalLink = (ext: ExternalLinkAsset) => {
@@ -844,6 +860,7 @@ export default function App() {
               handleEmojiPickerClick={handleEmojiPickerClick}
               handleIntranetViewModeChange={handleIntranetViewModeChange}
               handleResetExternalLinks={handleResetExternalLinks}
+              handleReorderExternalLinks={handleReorderExternalLinks}
               handleRoutePreferenceChange={handleRoutePreferenceChange}
               handleSaveOrUpdateExternalLink={handleSaveOrUpdateExternalLink}
               handleStartEditExternalLink={handleStartEditExternalLink}

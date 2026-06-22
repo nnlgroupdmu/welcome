@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
 import EmojiPicker from 'emoji-picker-react';
 import { ArrowUpRight, Check, ChevronDown, ChevronRight, ExternalLink, Layers, LayoutGrid, List, Plus, Search, SquarePen, X } from 'lucide-react';
-import type { ComponentProps, Dispatch, FormEvent, ReactNode, SetStateAction } from 'react';
+import { useEffect, useState } from 'react';
+import type { ComponentProps, Dispatch, DragEvent, FormEvent, MouseEvent, ReactNode, SetStateAction } from 'react';
 import { DEFAULT_EXTERNAL_LINKS, PRESET_EXTERNAL_LINKS } from '../data';
 import type { PresetLink } from '../data';
 import type { ExternalLinkAsset, ServiceAsset } from '../types';
@@ -28,6 +29,7 @@ type AppDigitalAssetsSectionProps = {
   handleEmojiPickerClick: ComponentProps<typeof EmojiPicker>['onEmojiClick'];
   handleIntranetViewModeChange: (mode: IntranetViewMode) => void;
   handleResetExternalLinks: () => void;
+  handleReorderExternalLinks: (draggedId: string, targetId: string) => void;
   handleRoutePreferenceChange: (newPref: RoutePreference) => void;
   handleSaveOrUpdateExternalLink: (e: FormEvent<HTMLFormElement>) => void;
   handleStartEditExternalLink: (ext: ExternalLinkAsset) => void;
@@ -98,6 +100,7 @@ export function AppDigitalAssetsSection({
   handleEmojiPickerClick,
   handleIntranetViewModeChange,
   handleResetExternalLinks,
+  handleReorderExternalLinks,
   handleRoutePreferenceChange,
   handleSaveOrUpdateExternalLink,
   handleStartEditExternalLink,
@@ -136,10 +139,89 @@ export function AppDigitalAssetsSection({
   showEmojiPicker,
   toggleExternalShortcutExpanded,
 }: AppDigitalAssetsSectionProps) {
+  const [draggingExternalLinkId, setDraggingExternalLinkId] = useState<string | null>(null);
+  const [dragOverExternalLinkId, setDragOverExternalLinkId] = useState<string | null>(null);
+
   const matchedLucideIcon = autoAssignIcon(newLinkUrl, newLinkName);
   const previewIcon = newLinkIconType === 'favicon' || (newLinkIconType === 'text' && newLinkUseMatchedLucide)
     ? matchedLucideIcon
     : '';
+
+  const exitExternalLinksEditMode = () => {
+    setIsEditModeActive(false);
+    setDraggingExternalLinkId(null);
+    setDragOverExternalLinkId(null);
+    handleCancelEdit();
+  };
+
+  const enterExternalLinksEditMode = () => {
+    setIsEditModeActive(true);
+    setIsExternalShortcutExpanded(true);
+    handleCancelEdit();
+  };
+
+  const openExternalLinkEditor = (ext: ExternalLinkAsset) => {
+    setIsEditModeActive(true);
+    setIsExternalShortcutExpanded(true);
+    handleStartEditExternalLink(ext);
+  };
+
+  const handleExternalLinkContextMenu = (event: MouseEvent) => {
+    event.preventDefault();
+    enterExternalLinksEditMode();
+  };
+
+  const handleExternalLinkDragStart = (event: DragEvent, ext: ExternalLinkAsset) => {
+    if (!isEditModeActive) {
+      event.preventDefault();
+      return;
+    }
+
+    setDraggingExternalLinkId(ext.id);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', ext.id);
+  };
+
+  const handleExternalLinkDragOver = (event: DragEvent, targetId: string) => {
+    if (!isEditModeActive || draggingExternalLinkId === targetId) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (draggingExternalLinkId) {
+      setDragOverExternalLinkId(targetId);
+    }
+  };
+
+  const handleExternalLinkDrop = (event: DragEvent, targetId: string) => {
+    if (!isEditModeActive) return;
+
+    event.preventDefault();
+    const draggedId = event.dataTransfer.getData('text/plain') || draggingExternalLinkId;
+    if (draggedId && draggedId !== targetId) {
+      handleReorderExternalLinks(draggedId, targetId);
+    }
+    setDraggingExternalLinkId(null);
+    setDragOverExternalLinkId(null);
+  };
+
+  const handleExternalLinkDragEnd = () => {
+    setDraggingExternalLinkId(null);
+    setDragOverExternalLinkId(null);
+  };
+
+  useEffect(() => {
+    if (!isEditModeActive) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (draggingExternalLinkId) return;
+      const target = event.target as Element | null;
+      if (target?.closest('[data-external-edit-keep="true"]')) return;
+      exitExternalLinksEditMode();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [draggingExternalLinkId, isEditModeActive]);
 
   return (
     <>
@@ -297,11 +379,13 @@ export function AppDigitalAssetsSection({
                       <button
                         type="button"
                         onClick={() => {
-                          setIsEditModeActive(!isEditModeActive);
-                          if (!isEditModeActive) {
-                            setIsExternalShortcutExpanded(true);
+                          if (isEditModeActive) {
+                            exitExternalLinksEditMode();
+                          } else {
+                            enterExternalLinksEditMode();
                           }
                         }}
+                        data-external-edit-keep="true"
                         className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'}`}
                         title={isEditModeActive ? "退出编辑与删除模式" : "进入编辑与删除模式"}
                       >
@@ -321,6 +405,7 @@ export function AppDigitalAssetsSection({
                           setNewLinkUrl('');
                           setNewLinkDesc('');
                         }}
+                        data-external-edit-keep="true"
                         className={`p-1 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded-md transition cursor-pointer focus:outline-hidden ${isAddingLink ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600'}`}
                         title={isAddingLink ? "收起面板" : "添加与推荐预设应用库"}
                       >
@@ -337,6 +422,7 @@ export function AppDigitalAssetsSection({
                         animate={{ opacity: 1, height: 'auto', marginBottom: 10, transitionEnd: { overflow: 'visible' } }}
                         exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
                         className="bg-slate-100/65 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/80 rounded-xl p-3.5 flex flex-col gap-3 my-1 text-left transition-colors duration-200 shadow-[inset_0_1px_2px_rgba(99,102,241,0.02)]"
+                        data-external-edit-keep="true"
                       >
                         {/* Seamless Header Tabs */}
                         <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-2">
@@ -742,20 +828,35 @@ export function AppDigitalAssetsSection({
                           {externalLinks.map((ext, idx) => {
                             const activeBgHover = 'group-hover:border-indigo-400 group-hover:bg-indigo-50/15 dark:group-hover:bg-indigo-950/40 group-hover:shadow-indigo-100/15';
                             const activeTextColor = 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400';
+                            const isDragging = draggingExternalLinkId === ext.id;
+                            const isDragOver = dragOverExternalLinkId === ext.id && draggingExternalLinkId !== ext.id;
 
                             return (
-                              <div key={ext.id} className="relative group/parent">
+                              <div
+                                key={ext.id}
+                                className={`relative group/parent rounded-[22px] transition-all duration-150 ${isDragging ? 'opacity-45 scale-95' : ''} ${isDragOver ? 'ring-2 ring-indigo-400/70 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900' : ''}`}
+                                data-external-edit-keep="true"
+                                onDragOver={(e) => handleExternalLinkDragOver(e, ext.id)}
+                                onDrop={(e) => handleExternalLinkDrop(e, ext.id)}
+                                onDragLeave={() => {
+                                  if (dragOverExternalLinkId === ext.id) setDragOverExternalLinkId(null);
+                                }}
+                              >
                                 <a
                                   id={`external-icon-card-${ext.id}`}
                                   href={isEditModeActive ? undefined : ext.url}
                                   target={isEditModeActive ? undefined : "_blank"}
                                   rel="noopener noreferrer"
-                                  onClick={isEditModeActive ? (e) => { e.preventDefault(); handleStartEditExternalLink(ext); } : undefined}
-                                  className="group flex flex-col items-center justify-start text-center cursor-pointer min-w-0 p-0.5"
+                                  draggable={isEditModeActive}
+                                  onDragStart={(e) => handleExternalLinkDragStart(e, ext)}
+                                  onDragEnd={handleExternalLinkDragEnd}
+                                  onContextMenu={handleExternalLinkContextMenu}
+                                  onClick={isEditModeActive ? (e) => { e.preventDefault(); openExternalLinkEditor(ext); } : undefined}
+                                  className={`group flex flex-col items-center justify-start text-center min-w-0 p-0.5 ${isEditModeActive ? 'cursor-move' : 'cursor-pointer'}`}
                                   title={isEditModeActive ? `编辑: ${ext.name}` : `${ext.name}\n${ext.description}\n\n点击立即跳转: ${ext.url}`}
                                 >
                                   <motion.div
-                                    className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 dark:from-zinc-900 dark:to-zinc-950 border border-slate-200/80 dark:border-zinc-800 ${isEditModeActive ? 'transition-none' : 'transition-all duration-300'} flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover}`}
+                                    className={`w-[68px] h-[68px] rounded-[20px] bg-gradient-to-br from-white to-slate-50 dark:from-zinc-900 dark:to-zinc-950 border border-slate-200/80 dark:border-zinc-800 ${isEditModeActive ? 'transition-none' : 'transition-all duration-300'} flex items-center justify-center relative shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.03)] ${activeBgHover} ${isDragOver ? 'border-indigo-400 bg-indigo-50/30 dark:bg-indigo-950/40' : ''}`}
                                     animate={isEditModeActive ? {
                                       rotate: idx % 2 === 0 ? [-1.2, 1.2, -1.2] : [1.2, -1.2, 1.2],
                                       y: idx % 2 === 0 ? [-0.6, 0.6, -0.6] : [0.6, -0.6, 0.6],
@@ -922,11 +1023,13 @@ export function AppDigitalAssetsSection({
                         <button
                           type="button"
                           onClick={() => {
-                            setIsEditModeActive(!isEditModeActive);
-                            if (!isEditModeActive) {
-                              setIsExternalShortcutExpanded(true);
+                            if (isEditModeActive) {
+                              exitExternalLinksEditMode();
+                            } else {
+                              enterExternalLinksEditMode();
                             }
                           }}
+                          data-external-edit-keep="true"
                           className={`p-1 rounded-md transition cursor-pointer flex items-center justify-center ${isEditModeActive ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-200/50'}`}
                           title={isEditModeActive ? "退出编辑与删除模式" : "进入编辑与删除模式"}
                         >
@@ -946,6 +1049,7 @@ export function AppDigitalAssetsSection({
                             setNewLinkUrl('');
                             setNewLinkDesc('');
                           }}
+                          data-external-edit-keep="true"
                           className={`p-1 hover:bg-slate-200/50 rounded-md transition cursor-pointer focus:outline-hidden ${isAddingLink ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-indigo-600'}`}
                           title={isAddingLink ? "收起面板" : "添加与推荐预设应用库"}
                         >
@@ -972,6 +1076,7 @@ export function AppDigitalAssetsSection({
                                 exit={{ height: 0, opacity: 0, marginBottom: 0, overflow: 'hidden' }}
                                 transition={{ duration: 0.2, ease: "easeInOut" }}
                                 className="border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40 p-3.5 rounded-xl mb-3 shadow-[inset_0_1px_2px_rgba(99,102,241,0.02)] flex flex-col gap-3 text-left"
+                                data-external-edit-keep="true"
                               >
                                 {/* Seamless Header Tabs */}
                                 <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800 pb-2">
@@ -1365,14 +1470,31 @@ export function AppDigitalAssetsSection({
                           </AnimatePresence>
 
                           <div className="grid grid-cols-2 gap-3 pt-0.5">
-                            {externalLinks.map(ext => (
-                              <div key={ext.id} className="relative group/parent">
+                            {externalLinks.map(ext => {
+                              const isDragging = draggingExternalLinkId === ext.id;
+                              const isDragOver = dragOverExternalLinkId === ext.id && draggingExternalLinkId !== ext.id;
+
+                              return (
+                              <div
+                                key={ext.id}
+                                className={`relative group/parent rounded-xl transition-all duration-150 ${isDragging ? 'opacity-45 scale-[0.98]' : ''} ${isDragOver ? 'ring-2 ring-indigo-400/70 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900' : ''}`}
+                                data-external-edit-keep="true"
+                                onDragOver={(e) => handleExternalLinkDragOver(e, ext.id)}
+                                onDrop={(e) => handleExternalLinkDrop(e, ext.id)}
+                                onDragLeave={() => {
+                                  if (dragOverExternalLinkId === ext.id) setDragOverExternalLinkId(null);
+                                }}
+                              >
                                 <a
                                   href={isEditModeActive ? undefined : ext.url}
                                   target={isEditModeActive ? undefined : "_blank"}
                                   rel="noopener noreferrer"
-                                  onClick={isEditModeActive ? (e) => { e.preventDefault(); handleStartEditExternalLink(ext); } : undefined}
-                                  className={`group/ext flex items-center gap-2.5 p-2.5 bg-white dark:bg-zinc-900/50 hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-500 rounded-xl transition-all duration-200 cursor-pointer text-left min-w-0 ${isEditModeActive ? 'pr-20' : ''}`}
+                                  draggable={isEditModeActive}
+                                  onDragStart={(e) => handleExternalLinkDragStart(e, ext)}
+                                  onDragEnd={handleExternalLinkDragEnd}
+                                  onContextMenu={handleExternalLinkContextMenu}
+                                  onClick={isEditModeActive ? (e) => { e.preventDefault(); openExternalLinkEditor(ext); } : undefined}
+                                  className={`group/ext flex items-center gap-2.5 p-2.5 bg-white dark:bg-zinc-900/50 hover:bg-slate-50 dark:hover:bg-zinc-800/40 border border-slate-200/60 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-500 rounded-xl transition-all duration-200 text-left min-w-0 ${isEditModeActive ? 'pr-20 cursor-move' : 'cursor-pointer'} ${isDragOver ? 'border-indigo-400 bg-indigo-50/45 dark:bg-indigo-950/30' : ''}`}
                                   title={isEditModeActive ? `编辑: ${ext.name}` : `点击跳转至: ${ext.url}\n${ext.description}`}
                                 >
                                   <div className="p-1.5 bg-slate-50 dark:bg-zinc-800/85 border border-slate-100 dark:border-zinc-700/65 rounded-lg group-hover/ext:bg-indigo-50/55 dark:group-hover:bg-indigo-950/40 group-hover/ext:border-indigo-100 dark:group-hover:border-indigo-800 transition-colors flex items-center justify-center shrink-0">
@@ -1405,7 +1527,7 @@ export function AppDigitalAssetsSection({
                                       onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        handleStartEditExternalLink(ext);
+                                        openExternalLinkEditor(ext);
                                       }}
                                       className="p-1 bg-amber-500 hover:bg-amber-600 text-white rounded-md transition shadow-xs cursor-pointer flex items-center justify-center"
                                       title={`编辑 ${ext.name}`}
@@ -1427,7 +1549,8 @@ export function AppDigitalAssetsSection({
                                   </div>
                                 ) : null}
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </motion.div>
                       )}
