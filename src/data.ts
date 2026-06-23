@@ -96,10 +96,7 @@ export const DEFAULT_EXTERNAL_LINKS: ExternalLinkAsset[] = [
     description: '学校的官方邮箱服务，可用于学生认证。',
     icon: 'Mail',
     url: 'https://webmail.dlmu.edu.cn/coremail/',
-    useFavicon: true,
-    isEmoji: true,
-    emoji: '📧',
-    iconText: '邮箱'
+    useFavicon: false,
   },
   {
     id: 'ext-2',
@@ -207,9 +204,9 @@ export const PRESET_EXTERNAL_LINKS: PresetLink[] = [
   {
     name: '谷歌学术 Scholar',
     description: '全球范围权威学术文献、论文专利的多学科检索平台。',
-    icon: 'Search',
+    icon: 'GraduationCap',
     url: 'https://scholar.google.com',
-    useFavicon: true,
+    useFavicon: false,
     category: '学术/科研检索'
   },
   {

@@ -28,7 +28,8 @@ import {
   Image,
   PenTool,
   PanelsTopLeft,
-  Video
+  Video,
+  GraduationCap
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -55,7 +56,8 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Image,
   PenTool,
   PanelsTopLeft,
-  Video
+  Video,
+  GraduationCap
 };
 
 export const getLucideIconElement = (iconName: string, className: string) => {
