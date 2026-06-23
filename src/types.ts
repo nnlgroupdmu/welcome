@@ -46,3 +46,20 @@ export interface MemoPost {
   tags: string[];
   isPrivate: boolean; // if true, only visible/unblurred in member mode
 }
+
+export type MemosCacheSource = 'tailscale' | 'lan';
+
+export interface CachedMemosPayload {
+  items: MemoPost[];
+  fetchedAt: number;
+  source: MemosCacheSource;
+}
+
+export type MemosSyncStatus =
+  | 'default'
+  | 'cached-fresh'
+  | 'cached-stale'
+  | 'syncing'
+  | 'live'
+  | 'offline-cache'
+  | 'error';

@@ -12,6 +12,10 @@ Our group website for daily navigation usage and open documentation management.
 
 服务器可在实验室 WiFi 局域网环境直接连接；公网环境请联系管理员获取 Tailscale 账号。
 
+## 维护文档
+
+面向项目维护者和 AI 协作者的工程文档见 [docs/README.md](docs/README.md)。面向实验室成员的在线使用指南仍位于 `public/docs/`。
+
 ## 网络模型
 
 该网站部署在 GitHub Pages 上，实时 Memos/GPU 数据由访问者的浏览器从 HTTP 内网服务中获取。用户应先连接到实验室的 Wi-Fi 或 Tailscale。如果浏览器阻止了直接的 HTTP 私有网络请求，该网站仍会保持导航和文档功能可用，并回退到内置内容。
@@ -19,4 +23,3 @@ Our group website for daily navigation usage and open documentation management.
 ## Network model
 
 The site is deployed on GitHub Pages, while live Memos/GPU data is fetched by the visitor's browser from HTTP intranet services. Users should connect to the lab WiFi or Tailscale first. If a browser blocks direct HTTP private-network requests, the site keeps navigation and docs available and falls back to built-in content.
-

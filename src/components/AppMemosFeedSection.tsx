@@ -1,12 +1,16 @@
 import { motion } from 'motion/react';
-import { Check, Clock, ExternalLink, PlusCircle, Send, StickyNote } from 'lucide-react';
+import { Check, Clock, ExternalLink, PlusCircle, RefreshCw, Send, StickyNote } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { MemoPost } from '../types';
+import type { MemoPost, MemosCacheSource, MemosSyncStatus } from '../types';
 import MemoContent from './MemoContent';
 import { INTERNAL_ROUTES, NETWORK_HELP_TEXT, ROUTE_LABELS, type RoutePreference } from '../appConfig';
 
 type AppMemosFeedSectionProps = {
   filteredMemos: MemoPost[];
+  isMemosRefreshing?: boolean;
+  memosFetchedAt: number | null;
+  memosSource: MemosCacheSource | null;
+  memosSyncStatus: MemosSyncStatus;
   routePreference: RoutePreference;
   selectedTag: string | null;
   setSelectedTag: (tag: string | null) => void;
@@ -16,6 +20,10 @@ type AppMemosFeedSectionProps = {
 
 export function AppMemosFeedSection({
   filteredMemos,
+  isMemosRefreshing = false,
+  memosFetchedAt,
+  memosSource,
+  memosSyncStatus,
   routePreference,
   selectedTag,
   setSelectedTag,
@@ -23,6 +31,24 @@ export function AppMemosFeedSection({
   visibleMemosCount,
 }: AppMemosFeedSectionProps) {
   const memosHost = INTERNAL_ROUTES[routePreference].memos;
+  const formattedFetchedAt = memosFetchedAt
+    ? new Intl.DateTimeFormat('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(memosFetchedAt))
+    : '';
+  const sourceLabel = memosSource ? ROUTE_LABELS[memosSource] : ROUTE_LABELS[routePreference];
+  const syncStatusText = (() => {
+    if (isMemosRefreshing || memosSyncStatus === 'syncing') return '正在同步...';
+    if (memosSyncStatus === 'live') return formattedFetchedAt ? `已同步于 ${formattedFetchedAt} · ${sourceLabel}` : '已同步';
+    if (memosSyncStatus === 'cached-fresh') return formattedFetchedAt ? `缓存可用，上次同步于 ${formattedFetchedAt}` : '缓存可用';
+    if (memosSyncStatus === 'cached-stale') return formattedFetchedAt ? `显示缓存，上次同步于 ${formattedFetchedAt}` : '显示缓存';
+    if (memosSyncStatus === 'offline-cache') return formattedFetchedAt ? `离线缓存，上次同步于 ${formattedFetchedAt}` : '离线缓存';
+    if (memosSyncStatus === 'error') return '同步失败，显示内置内容';
+    return '等待同步';
+  })();
+  const isOfflineCache = memosSyncStatus === 'offline-cache' || memosSyncStatus === 'cached-stale' || memosSyncStatus === 'error';
 
   return (
     <section id="section-memos-feed" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-3 lg:order-none">
@@ -34,6 +60,10 @@ export function AppMemosFeedSection({
           <div>
             <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">Memos 速递</h3>
             <p className="text-xs text-slate-400 dark:text-zinc-500">在这里速览 Memos 笔记最新发布的内容；不可达时保留内置内容</p>
+            <p className={`text-[11px] mt-1 flex items-center gap-1.5 ${isOfflineCache ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              <RefreshCw className={`w-3 h-3 ${isMemosRefreshing ? 'animate-spin' : ''}`} />
+              {syncStatusText}
+            </p>
           </div>
         </div>
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Activity,
   BookOpen,
@@ -23,7 +23,7 @@ import {
   StickyNote,
   Wrench
 } from 'lucide-react';
-import { NavItem, ServiceAsset, MemoPost, ExternalLinkAsset } from './types';
+import { NavItem, ServiceAsset, MemoPost, ExternalLinkAsset, CachedMemosPayload, MemosCacheSource, MemosSyncStatus } from './types';
 import { DEFAULT_NAV_ITEMS, DEFAULT_SERVICES, DEFAULT_MEMOS, DEFAULT_EXTERNAL_LINKS, PRESET_EXTERNAL_LINKS } from './data';
 import { Theme } from 'emoji-picker-react';
 import zhEmojiData from 'emoji-picker-react/dist/data/emojis-zh';
@@ -36,35 +36,59 @@ import { AppDigitalAssetsSection } from './components/AppDigitalAssetsSection';
 import { AppFooter } from './components/AppFooter';
 import { AppBackToTopButton } from './components/AppBackToTopButton';
 import { INTERNAL_ROUTES, NETWORK_ENDPOINTS, type RoutePreference } from './appConfig';
-import { copyText, fetchWithTimeout, parseJson, readStorage, writeStorage } from './clientUtils';
+import { CACHE_MEMOS, CACHE_USER_LINKS, MEMOS_CACHE_TTL_MS, MEMOS_REFRESH_INTERVAL_MS, STORAGE_KEYS } from './cachePolicy';
+import { copyText, fetchWithTimeout, readBooleanStorage, readEnumStorage, readJsonStorage, writeJsonStorage, writeStorage } from './clientUtils';
 
+const isMemosCacheSource = (value: unknown): value is MemosCacheSource => value === 'tailscale' || value === 'lan';
+
+const isMemoPostArray = (value: unknown): value is MemoPost[] => Array.isArray(value);
+
+const readCachedMemos = (): CachedMemosPayload | null => {
+  const cached = readJsonStorage<unknown>(STORAGE_KEYS.memos, null);
+  if (!cached) return null;
+
+  if (isMemoPostArray(cached)) {
+    return {
+      items: cached,
+      fetchedAt: 0,
+      source: 'tailscale',
+    };
+  }
+
+  if (typeof cached !== 'object') return null;
+  const payload = cached as Partial<CachedMemosPayload>;
+  if (!isMemoPostArray(payload.items)) return null;
+  if (typeof payload.fetchedAt !== 'number') return null;
+  if (!isMemosCacheSource(payload.source)) return null;
+
+  return {
+    items: payload.items,
+    fetchedAt: payload.fetchedAt,
+    source: payload.source,
+  };
+};
+
+const isMemosCacheStale = (payload: CachedMemosPayload) => Date.now() - payload.fetchedAt > MEMOS_CACHE_TTL_MS;
 
 export default function App() {
-  // Caching configuration: Change to true to re-enable local storage persistence
-  const ENABLE_CACHE = false;
+  const [initialCachedMemos] = useState<CachedMemosPayload | null>(() => (CACHE_MEMOS ? readCachedMemos() : null));
 
-  // Core Data States (Initialized from Default Data, synced with localStorage if enabled)
-  const [navItems, setNavItems] = useState<NavItem[]>(() => {
-    if (ENABLE_CACHE) {
-      return parseJson(readStorage('seal_nav_items'), DEFAULT_NAV_ITEMS);
-    }
-    return DEFAULT_NAV_ITEMS;
-  });
-  const [services, setServices] = useState<ServiceAsset[]>(() => {
-    if (ENABLE_CACHE) {
-      return parseJson(readStorage('seal_services'), DEFAULT_SERVICES);
-    }
-    return DEFAULT_SERVICES;
-  });
+  // Site configuration always comes from the bundled code, never localStorage.
+  const [navItems] = useState<NavItem[]>(DEFAULT_NAV_ITEMS);
+  const [services] = useState<ServiceAsset[]>(DEFAULT_SERVICES);
   const [externalLinks, setExternalLinks] = useState<ExternalLinkAsset[]>(() => {
-    return parseJson(readStorage('seal_external_links'), DEFAULT_EXTERNAL_LINKS);
+    return CACHE_USER_LINKS ? readJsonStorage(STORAGE_KEYS.externalLinks, DEFAULT_EXTERNAL_LINKS) : DEFAULT_EXTERNAL_LINKS;
   });
   const [memos, setMemos] = useState<MemoPost[]>(() => {
-    if (ENABLE_CACHE) {
-      return parseJson(readStorage('seal_memos'), DEFAULT_MEMOS);
-    }
-    return DEFAULT_MEMOS;
+    return initialCachedMemos?.items.length ? initialCachedMemos.items : DEFAULT_MEMOS;
   });
+  const [memosFetchedAt, setMemosFetchedAt] = useState<number | null>(() => initialCachedMemos?.fetchedAt || null);
+  const [memosSource, setMemosSource] = useState<MemosCacheSource | null>(() => initialCachedMemos?.source || null);
+  const [memosSyncStatus, setMemosSyncStatus] = useState<MemosSyncStatus>(() => {
+    if (!initialCachedMemos?.items.length) return 'default';
+    return isMemosCacheStale(initialCachedMemos) ? 'cached-stale' : 'cached-fresh';
+  });
+  const [isMemosRefreshing, setIsMemosRefreshing] = useState<boolean>(false);
 
   // Client Filter & View States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -94,25 +118,23 @@ export default function App() {
 
   // Intranet Application View mode ('list' vs 'icons' with localStorage persistence)
   const [intranetViewMode, setIntranetViewMode] = useState<'list' | 'icons'>(() => {
-    const cached = readStorage('seal_intranet_view_mode');
-    return (cached as 'list' | 'icons') || 'list';
+    return readEnumStorage(STORAGE_KEYS.intranetViewMode, ['list', 'icons'], 'list');
   });
 
   const handleIntranetViewModeChange = (mode: 'list' | 'icons') => {
     setIntranetViewMode(mode);
-    writeStorage('seal_intranet_view_mode', mode);
+    writeStorage(STORAGE_KEYS.intranetViewMode, mode);
   };
 
   // State to manage collapisble external shortcuts widget in list mode
   const [isExternalShortcutExpanded, setIsExternalShortcutExpanded] = useState<boolean>(() => {
-    const cached = readStorage('seal_external_shortcut_expanded');
-    return cached === null ? true : cached === 'true';
+    return readBooleanStorage(STORAGE_KEYS.externalShortcutExpanded, true);
   });
 
   const toggleExternalShortcutExpanded = () => {
     setIsExternalShortcutExpanded(prev => {
       const newVal = !prev;
-      writeStorage('seal_external_shortcut_expanded', String(newVal));
+      writeStorage(STORAGE_KEYS.externalShortcutExpanded, String(newVal));
       return newVal;
     });
   };
@@ -121,18 +143,14 @@ export default function App() {
   type ThemeMode = 'light' | 'dark' | 'system';
 
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const cached = readStorage('seal_theme_mode');
-    if (cached === 'light' || cached === 'dark' || cached === 'system') {
-      return cached;
-    }
-    return 'system';
+    return readEnumStorage(STORAGE_KEYS.themeMode, ['light', 'dark', 'system'], 'system');
   });
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    writeStorage('seal_theme_mode', themeMode);
+    writeStorage(STORAGE_KEYS.themeMode, themeMode);
 
     const checkDark = () => {
       if (themeMode === 'light') return false;
@@ -428,21 +446,28 @@ export default function App() {
     });
   };
 
-  const fetchRemoteMemos = async () => {
-    const urls = [
-      INTERNAL_ROUTES.tailscale.memosApi,
-      INTERNAL_ROUTES.lan.memosApi
+  const fetchRemoteMemos = useCallback(async (options: { silent?: boolean } = {}) => {
+    if (!options.silent) {
+      setMemosSyncStatus('syncing');
+    }
+    setIsMemosRefreshing(true);
+
+    const targets: Array<{ source: MemosCacheSource; url: string }> = [
+      { source: 'tailscale', url: INTERNAL_ROUTES.tailscale.memosApi },
+      { source: 'lan', url: INTERNAL_ROUTES.lan.memosApi }
     ];
 
-    const fetchSinglePath = async (url: string) => {
+    const fetchSinglePath = async ({ source, url }: { source: MemosCacheSource; url: string }) => {
       const response = await fetchWithTimeout(url, {}, NETWORK_ENDPOINTS.timeouts.memosMs);
       if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
-      return await response.json();
+      const data = await response.json();
+      return { data, source };
     };
 
     try {
-      const data = await Promise.any(urls.map(url => fetchSinglePath(url)));
+      const { data, source } = await Promise.any(targets.map(target => fetchSinglePath(target)));
       const list = Array.isArray(data) ? data : (data.memos || data.data || []);
+      if (!list || list.length === 0) throw new Error('No memos returned');
 
       if (list && list.length > 0) {
         const mapped: MemoPost[] = list.map((item: any, idx: number) => {
@@ -525,12 +550,33 @@ export default function App() {
           };
         });
 
+        const fetchedAt = Date.now();
         setMemos(mapped);
+        setMemosFetchedAt(fetchedAt);
+        setMemosSource(source);
+        setMemosSyncStatus('live');
+
+        if (CACHE_MEMOS) {
+          writeJsonStorage(STORAGE_KEYS.memos, {
+            items: mapped,
+            fetchedAt,
+            source,
+          } satisfies CachedMemosPayload);
+        }
       }
     } catch {
-      setMemos(prev => (prev.length > 0 ? prev : DEFAULT_MEMOS));
+      setMemos(prev => {
+        if (prev.length > 0 && memosFetchedAt !== null) {
+          setMemosSyncStatus('offline-cache');
+          return prev;
+        }
+        setMemosSyncStatus('error');
+        return DEFAULT_MEMOS;
+      });
+    } finally {
+      setIsMemosRefreshing(false);
     }
-  };
+  }, [memosFetchedAt]);
 
   const testTailscaleConnection = async () => {
     setTailscaleStatus('testing');
@@ -583,28 +629,27 @@ export default function App() {
     handleRefreshAndCheck();
   }, []);
 
-  // Sync state modifications to localStorage
   useEffect(() => {
-    if (ENABLE_CACHE) {
-      writeStorage('seal_nav_items', JSON.stringify(navItems));
-    }
-  }, [navItems, ENABLE_CACHE]);
+    const refreshVisibleMemos = () => {
+      if (document.visibilityState === 'visible') {
+        fetchRemoteMemos({ silent: true });
+      }
+    };
+
+    const timerId = window.setInterval(refreshVisibleMemos, MEMOS_REFRESH_INTERVAL_MS);
+    document.addEventListener('visibilitychange', refreshVisibleMemos);
+
+    return () => {
+      window.clearInterval(timerId);
+      document.removeEventListener('visibilitychange', refreshVisibleMemos);
+    };
+  }, [fetchRemoteMemos]);
 
   useEffect(() => {
-    if (ENABLE_CACHE) {
-      writeStorage('seal_services', JSON.stringify(services));
+    if (CACHE_USER_LINKS) {
+      writeJsonStorage(STORAGE_KEYS.externalLinks, externalLinks);
     }
-  }, [services, ENABLE_CACHE]);
-
-  useEffect(() => {
-    writeStorage('seal_external_links', JSON.stringify(externalLinks));
   }, [externalLinks]);
-
-  useEffect(() => {
-    if (ENABLE_CACHE) {
-      writeStorage('seal_memos', JSON.stringify(memos));
-    }
-  }, [memos, ENABLE_CACHE]);
 
   // Utility to copy text to clipboard
   const handleCopyToClipboard = async (text: string, id: string) => {
@@ -796,6 +841,10 @@ export default function App() {
           {/* ----------------- 3. 资讯专区 (INFORMATION FEED - MEMOS) ----------------- */}
           <AppMemosFeedSection
             filteredMemos={filteredMemos}
+            isMemosRefreshing={isMemosRefreshing}
+            memosFetchedAt={memosFetchedAt}
+            memosSource={memosSource}
+            memosSyncStatus={memosSyncStatus}
             routePreference={routePreference}
             selectedTag={selectedTag}
             setSelectedTag={setSelectedTag}

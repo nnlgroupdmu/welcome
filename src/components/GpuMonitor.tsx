@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, RefreshCw, Cpu, Server, CheckCircle2, AlertCircle } from 'lucide-react';
 import { INTERNAL_ROUTES, NETWORK_ENDPOINTS, NETWORK_HELP_TEXT } from '../appConfig';
@@ -30,6 +30,8 @@ export const GpuMonitor: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [isOnline, setIsOnline] = useState<boolean>(false);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+    const [lastSuccessfulAt, setLastSuccessfulAt] = useState<number | null>(null);
+    const hasLiveSnapshotRef = useRef(false);
 
     const fetchGpuMetrics = async (showPulse = false) => {
         if (showPulse) setIsRefreshing(true);
@@ -59,10 +61,13 @@ export const GpuMonitor: React.FC = () => {
             formattedGpus.sort((a, b) => a.id.localeCompare(b.id));
             setGpus(formattedGpus);
             setIsOnline(true);
+            hasLiveSnapshotRef.current = true;
+            setLastSuccessfulAt(Date.now());
         } catch (err) {
             setIsOnline(false);
-            // 离线时恢复预置的节点，使其作为结构完整的展示
-            setGpus(PRESET_GPUS);
+            if (!hasLiveSnapshotRef.current) {
+                setGpus(PRESET_GPUS);
+            }
         } finally {
             setLoading(false);
             setTimeout(() => {
@@ -76,6 +81,15 @@ export const GpuMonitor: React.FC = () => {
         const timer = setInterval(() => fetchGpuMetrics(false), 8000);
         return () => clearInterval(timer);
     }, []);
+
+    const hasStaleSnapshot = !isOnline && hasLiveSnapshotRef.current && lastSuccessfulAt !== null;
+    const lastSuccessfulTime = lastSuccessfulAt
+        ? new Intl.DateTimeFormat('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).format(new Date(lastSuccessfulAt))
+        : '';
 
     return (
         <div className="w-full mt-2 pt-2 border-t border-slate-700/30 dark:border-zinc-800/60 flex flex-col gap-2.5 font-sans">
@@ -97,7 +111,7 @@ export const GpuMonitor: React.FC = () => {
                             : 'bg-rose-500/5 text-slate-500 dark:text-zinc-500 border border-slate-800/80 dark:border-zinc-800/85'
                     }`}>
                         <span className={`w-1 h-1 rounded-full ${isOnline ? 'bg-emerald-400 animate-ping' : 'bg-slate-600 dark:bg-zinc-600'}`}></span>
-                        <span>{isOnline ? '已联通' : '未联通'}</span>
+                        <span>{isOnline ? '已联通' : hasStaleSnapshot ? '已过期' : '未联通'}</span>
                     </span>
 
                     {/* Refresh Button */}
@@ -125,9 +139,10 @@ export const GpuMonitor: React.FC = () => {
                             {gpus.map((gpu, index) => {
                                 const isHighLoad = gpu.utilization > 70;
                                 const isMediumLoad = gpu.utilization > 30 && gpu.utilization <= 70;
+                                const canShowMetric = isOnline || hasStaleSnapshot;
                                 
                                 // Elegant gradient color palettes
-                                const barColorClass = !isOnline 
+                                const barColorClass = !canShowMetric 
                                     ? 'bg-slate-800 dark:bg-zinc-800' 
                                     : isHighLoad 
                                         ? 'bg-gradient-to-r from-amber-500 to-rose-500' 
@@ -135,8 +150,10 @@ export const GpuMonitor: React.FC = () => {
                                             ? 'bg-gradient-to-r from-teal-500 to-cyan-400' 
                                             : 'bg-gradient-to-r from-emerald-500 to-teal-400';
                                 
-                                const textColorClass = !isOnline 
+                                const textColorClass = !canShowMetric 
                                     ? 'text-slate-600 dark:text-zinc-650' 
+                                    : hasStaleSnapshot
+                                        ? 'text-amber-400'
                                     : isHighLoad 
                                         ? 'text-rose-400' 
                                         : 'text-teal-400';
@@ -149,7 +166,7 @@ export const GpuMonitor: React.FC = () => {
                                         {/* Left Side: Node Info */}
                                         <div className="flex flex-col min-w-0 pr-2">
                                             <div className="flex items-center gap-1.5">
-                                                <span className={`text-[12px] font-bold ${isOnline ? 'text-slate-200 dark:text-zinc-200' : 'text-slate-500 dark:text-zinc-550'}`}>
+                                                <span className={`text-[12px] font-bold ${canShowMetric ? 'text-slate-200 dark:text-zinc-200' : 'text-slate-500 dark:text-zinc-550'}`}>
                                                     {gpu.id}
                                                 </span>
                                                 {isOnline && gpu.utilization > 0 && (
@@ -168,7 +185,7 @@ export const GpuMonitor: React.FC = () => {
                                                     UTIL
                                                 </span>
                                                 <span className={`text-[11px] font-extrabold font-mono transition-colors duration-500 ${textColorClass}`}>
-                                                    {isOnline ? `${gpu.utilization}%` : 'OFFLINE'}
+                                                    {canShowMetric ? `${gpu.utilization}%` : 'OFFLINE'}
                                                 </span>
                                             </div>
                                             
@@ -176,7 +193,7 @@ export const GpuMonitor: React.FC = () => {
                                             <div className="w-full h-[3px] bg-slate-800/80 dark:bg-zinc-800/80 rounded-full overflow-hidden">
                                                 <motion.div 
                                                     initial={{ width: 0 }}
-                                                    animate={{ width: isOnline ? `${gpu.utilization}%` : '0%' }}
+                                                    animate={{ width: canShowMetric ? `${gpu.utilization}%` : '0%' }}
                                                     transition={{ duration: 0.8, ease: "easeOut" }}
                                                     className={`h-full rounded-full ${barColorClass}`}
                                                 />
@@ -192,8 +209,10 @@ export const GpuMonitor: React.FC = () => {
                             <div className="p-2 rounded-lg bg-rose-500/5 border border-rose-500/10 flex items-start gap-2 animate-fade-in">
                                 <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                                 <div className="flex-1 text-[10px] text-slate-400 dark:text-zinc-400 leading-normal">
-                                    <span className="text-rose-400 font-semibold block mb-0.5">未检测到实时监控</span>
-                                    暂未读取到实时 GPU 指标。{NETWORK_HELP_TEXT}
+                                    <span className="text-rose-400 font-semibold block mb-0.5">
+                                        {hasStaleSnapshot ? `实时监控已过期，最后读取于 ${lastSuccessfulTime}` : '未检测到实时监控'}
+                                    </span>
+                                    {hasStaleSnapshot ? '当前显示的是内存中的最后一次成功读取值。' : '暂未读取到实时 GPU 指标。'}{NETWORK_HELP_TEXT}
                                 </div>
                             </div>
                         )}
