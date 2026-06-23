@@ -1,5 +1,6 @@
 import { Sparkles } from 'lucide-react';
 import { GpuMonitor } from './GpuMonitor';
+import { NETWORK_HELP_TEXT } from '../appConfig';
 
 export function AppWelcomeBanner() {
   return (
@@ -35,7 +36,7 @@ export function AppWelcomeBanner() {
                 <span className="text-[11px] font-bold text-slate-200 dark:text-zinc-200 tracking-wider uppercase">物理内网 / Tailscale 双路连接</span>
               </div>
               <p className="text-[11px] text-slate-400 dark:text-zinc-400 leading-normal">
-                本站需要物理内网直连或 Tailscale 专网。连接实验室 WiFi 同步内网数据；校外/宿舍请启动
+                {NETWORK_HELP_TEXT} 校外/宿舍请启动
                 <code className="text-teal-400 font-mono px-1 bg-slate-950 dark:bg-zinc-950 border border-slate-800/80 dark:border-zinc-800 rounded text-[10px]">Tailscale</code>
                 虚拟专网。
               </p>

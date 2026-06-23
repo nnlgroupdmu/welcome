@@ -1,17 +1,18 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { Github, Mail, Monitor, Moon, Sun, Terminal } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
+import { ROUTE_LABELS, type RoutePreference } from '../appConfig';
 
 type AppHeaderBarProps = {
   copiedId: string | null;
   handleCopyToClipboard: (text: string, id: string) => void;
   handleRefreshAndCheck: () => void;
-  handleRoutePreferenceChange: (preference: 'tailscale' | 'lan') => void;
+  handleRoutePreferenceChange: (preference: RoutePreference) => void;
   isThemeDropdownOpen: boolean;
   lanLatency: number | null;
   lanStatus: 'unchecked' | 'testing' | 'connected' | 'error';
   latency: number | null;
-  routePreference: 'tailscale' | 'lan';
+  routePreference: RoutePreference;
   setIsThemeDropdownOpen: Dispatch<SetStateAction<boolean>>;
   setThemeMode: (mode: 'light' | 'dark' | 'system') => void;
   tailscaleStatus: 'unchecked' | 'testing' | 'connected' | 'error';
@@ -36,7 +37,7 @@ export function AppHeaderBar({
   const isTailscale = routePreference === 'tailscale';
   const currentStatus = isTailscale ? tailscaleStatus : lanStatus;
   const currentLatency = isTailscale ? latency : lanLatency;
-  const networkName = isTailscale ? 'Tailscale专网' : '物理内网';
+  const networkName = ROUTE_LABELS[routePreference];
 
   return (
     <header id="main-header" className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-b border-slate-200/80 dark:border-zinc-800/90 shadow-xs transition-colors duration-200">
@@ -66,12 +67,12 @@ export function AppHeaderBar({
               id="btn-link-contact"
               onClick={() => handleCopyToClipboard('mistiiixv@gmail.com', 'admin-email')}
               className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors cursor-pointer relative"
-              title={copiedId === 'admin-email' ? '邮箱已复制！' : '复制管理员邮箱 (mistiiixv@gmail.com)'}
+              title={copiedId === 'copy-error' ? '复制失败，请手动复制邮箱' : copiedId === 'admin-email' ? '邮箱已复制！' : '复制管理员邮箱 (mistiiixv@gmail.com)'}
             >
               <Mail className="w-5 h-5" />
-              {copiedId === 'admin-email' && (
+              {(copiedId === 'admin-email' || copiedId === 'copy-error') && (
                 <span className="absolute top-full mt-1 right-0 bg-slate-900 text-white text-[10px] py-0.5 px-1.5 rounded shadow-sm whitespace-nowrap z-50">
-                  已复制
+                  {copiedId === 'copy-error' ? '复制失败' : '已复制'}
                 </span>
               )}
             </button>

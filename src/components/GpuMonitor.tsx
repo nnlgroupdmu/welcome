@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, RefreshCw, Cpu, Server, CheckCircle2, AlertCircle } from 'lucide-react';
+import { INTERNAL_ROUTES, NETWORK_ENDPOINTS, NETWORK_HELP_TEXT } from '../appConfig';
+import { fetchWithTimeout } from '../clientUtils';
 
 interface PrometheusResult {
     metric: {
@@ -33,26 +35,18 @@ export const GpuMonitor: React.FC = () => {
         if (showPulse) setIsRefreshing(true);
         const promql = "DCGM_FI_DEV_GPU_UTIL";
         const urls = [
-            `http://100.68.153.123:9091/api/v1/query?query=${encodeURIComponent(promql)}`,
-            `http://192.168.31.240:9091/api/v1/query?query=${encodeURIComponent(promql)}`
+            `${INTERNAL_ROUTES.tailscale.prometheusApi}?query=${encodeURIComponent(promql)}`,
+            `${INTERNAL_ROUTES.lan.prometheusApi}?query=${encodeURIComponent(promql)}`
         ];
 
         const fetchSinglePath = async (url: string) => {
-            const controller = new AbortController();
-            const timerId = setTimeout(() => controller.abort(), 1800);
-            try {
-                const response = await fetch(url, { signal: controller.signal });
-                clearTimeout(timerId);
-                if (!response.ok) throw new Error();
-                const resData = await response.json();
-                if (resData.status === "success" && resData.data?.result) {
-                    return resData.data.result as PrometheusResult[];
-                }
-                throw new Error();
-            } catch (e) {
-                clearTimeout(timerId);
-                throw e;
+            const response = await fetchWithTimeout(url, {}, NETWORK_ENDPOINTS.timeouts.gpuMs);
+            if (!response.ok) throw new Error();
+            const resData = await response.json();
+            if (resData.status === "success" && resData.data?.result) {
+                return resData.data.result as PrometheusResult[];
             }
+            throw new Error();
         };
 
         try {
@@ -199,7 +193,7 @@ export const GpuMonitor: React.FC = () => {
                                 <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                                 <div className="flex-1 text-[10px] text-slate-400 dark:text-zinc-400 leading-normal">
                                     <span className="text-rose-400 font-semibold block mb-0.5">未检测到实时监控</span>
-                                    物理内网接口响应超时。欲载入集群真实负载，宿舍/校外请确保 <code className="text-teal-400 font-mono px-0.5 bg-slate-950 dark:bg-zinc-950 rounded">Tailscale</code> 运行且顶部连通路线为【TS专网】。
+                                    暂未读取到实时 GPU 指标。{NETWORK_HELP_TEXT}
                                 </div>
                             </div>
                         )}

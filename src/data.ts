@@ -4,6 +4,7 @@
  */
 
 import { NavItem, ServiceAsset, MemoPost, ExternalLinkAsset } from './types';
+import { INTERNAL_ROUTES } from './appConfig';
 
 const baseUrl = (import.meta as any).env?.BASE_URL || '/';
 
@@ -56,8 +57,8 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     name: 'Memos 轻笔记动态广场',
     description: '实验室闪念、日常、代码 Bug、科研发现的分享平台。',
     icon: 'StickyNote',
-    localUrl: 'http://192.168.31.240:5230/explore',
-    tailscaleUrl: 'http://100.68.153.123:5230/explore',
+    localUrl: INTERNAL_ROUTES.lan.memosExplore,
+    tailscaleUrl: INTERNAL_ROUTES.tailscale.memosExplore,
     status: 'online'
   },
   {
@@ -65,8 +66,8 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     name: 'AList 文件存储中心',
     description: '服务器的共享存储空间。支持内网上传和下载。',
     icon: 'FolderClosed',
-    localUrl: 'http://192.168.31.240:5244',
-    tailscaleUrl: 'http://100.68.153.123:5244',
+    localUrl: INTERNAL_ROUTES.lan.alist,
+    tailscaleUrl: INTERNAL_ROUTES.tailscale.alist,
     status: 'online'
   },
   {
@@ -74,8 +75,8 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     name: 'Gitea 代码托管平台',
     description: '服务器的本地 Git 代码托管平台。',
     icon: 'GitBranch',
-    localUrl: 'http://192.168.31.240:3000/explore/repos',
-    tailscaleUrl: 'http://100.68.153.123:3000/explore/repos',
+    localUrl: INTERNAL_ROUTES.lan.giteaExplore,
+    tailscaleUrl: INTERNAL_ROUTES.tailscale.giteaExplore,
     status: 'online'
   },
   {
@@ -83,8 +84,8 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
     name: 'Grafana 显卡监控大屏',
     description: '服务器的显卡资源实时监控。',
     icon: 'Gauge',
-    localUrl: 'http://192.168.31.240:3999/d/adfcnh6/nvidia-dcgm-exporter?orgId=1&from=now-3h&to=now&timezone=browser&var-instance=localhost:9400&var-gpu=$__all&refresh=5s',
-    tailscaleUrl: 'http://100.68.153.123:3999/d/adfcnh6/nvidia-dcgm-exporter?orgId=1&from=now-3h&to=now&timezone=browser&var-instance=localhost:9400&var-gpu=$__all&refresh=5s',
+    localUrl: INTERNAL_ROUTES.lan.grafanaGpu,
+    tailscaleUrl: INTERNAL_ROUTES.tailscale.grafanaGpu,
     status: 'online'
   }
 ];
@@ -207,16 +208,6 @@ export const PRESET_EXTERNAL_LINKS: PresetLink[] = [
     icon: 'GraduationCap',
     url: 'https://scholar.google.com',
     useFavicon: false,
-    category: '学术/科研检索'
-  },
-  {
-    name: 'DBLP 计算机文献库',
-    description: '计算机科学领域的开放英文文献集成数据库及会刊检索。',
-    icon: 'Database',
-    url: 'https://dblp.org',
-    useFavicon: false,
-    iconText: 'DBLP',
-    customColor: 'blue',
     category: '学术/科研检索'
   },
   // 实用绘图/效率

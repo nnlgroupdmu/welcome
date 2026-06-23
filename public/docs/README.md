@@ -6,6 +6,8 @@
 
 主站：[NNL Group Lab](https://nnlgroupdmu.github.io/welcome/)
 
+> 主站部署在 GitHub Pages，实时 Memos/GPU 数据由你的浏览器直连 HTTP 内网服务获取。请先接入实验室 WiFi 或 Tailscale；如果浏览器安全策略阻止直连，主站会保留导航和文档功能，并显示离线/内置内容。
+
 ### 内网专区
 
 <div class="nav-container">
@@ -117,4 +119,3 @@
 > 本页面列出的所有服务均运行于实验室局域网内。
 > 在实验室 WiFi 网络外时，必须先开启 Tailscale 并连接到实验室虚拟网，否则无法打开链接。
 > [👉 点击查看 Tailscale 虚拟局域网加入指南](vpn_guide.md)
-

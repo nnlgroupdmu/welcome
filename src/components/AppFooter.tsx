@@ -6,7 +6,7 @@ export function AppFooter() {
           © 2026 NNL Group Lab | nnlgroupdmu
         </p>
         <div className="flex gap-4">
-          <span className="text-[11px] text-slate-400 dark:text-zinc-500">版本: v3.3.2-Build</span>
+          <span className="text-[11px] text-slate-400 dark:text-zinc-500">版本: v3.4.0-Build</span>
         </div>
       </div>
     </footer>

@@ -60,6 +60,8 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   GraduationCap
 };
 
+const ENABLE_THIRD_PARTY_FAVICONS = (import.meta as any).env?.VITE_ENABLE_THIRD_PARTY_FAVICONS === 'true';
+
 export const getLucideIconElement = (iconName: string, className: string) => {
   const IconComponent = iconMap[iconName] || ExternalLink;
   return <IconComponent className={className} />;
@@ -258,7 +260,9 @@ export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({
     );
   };
 
-  // If useFavicon is false or domain couldn't be parsed, use fallback immediately
+  // If useFavicon is false or domain couldn't be parsed, use fallback immediately.
+  // Direct site favicon loading stays enabled by default; third-party favicon proxies
+  // are optional to avoid extra external requests.
   if (!useFavicon || !domain) {
     return renderFallback();
   }
@@ -269,11 +273,11 @@ export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({
       case 0:
         return `https://${domain}/favicon.ico`;
       case 1:
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        return ENABLE_THIRD_PARTY_FAVICONS ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : '';
       case 2:
-        return `https://favicon.duckduckgo.com/ip2/${domain}.ico`;
+        return ENABLE_THIRD_PARTY_FAVICONS ? `https://favicon.duckduckgo.com/ip2/${domain}.ico` : '';
       case 3:
-        return `https://icon.horse/icon/${domain}`;
+        return ENABLE_THIRD_PARTY_FAVICONS ? `https://icon.horse/icon/${domain}` : '';
       default:
         return '';
     }
@@ -282,7 +286,7 @@ export const ExternalFavicon: React.FC<ExternalFaviconProps> = ({
   const currentSrc = getFaviconUrl(attempt);
 
   // If we exhausted all sources, use fallback rendering
-  if (attempt >= 4 || !currentSrc) {
+  if (attempt >= (ENABLE_THIRD_PARTY_FAVICONS ? 4 : 1) || !currentSrc) {
     return renderFallback();
   }
 

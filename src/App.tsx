@@ -35,6 +35,8 @@ import { AppMemosFeedSection } from './components/AppMemosFeedSection';
 import { AppDigitalAssetsSection } from './components/AppDigitalAssetsSection';
 import { AppFooter } from './components/AppFooter';
 import { AppBackToTopButton } from './components/AppBackToTopButton';
+import { INTERNAL_ROUTES, NETWORK_ENDPOINTS, type RoutePreference } from './appConfig';
+import { copyText, fetchWithTimeout, parseJson, readStorage, writeStorage } from './clientUtils';
 
 
 export default function App() {
@@ -44,33 +46,22 @@ export default function App() {
   // Core Data States (Initialized from Default Data, synced with localStorage if enabled)
   const [navItems, setNavItems] = useState<NavItem[]>(() => {
     if (ENABLE_CACHE) {
-      const cached = localStorage.getItem('seal_nav_items');
-      if (cached) return JSON.parse(cached);
+      return parseJson(readStorage('seal_nav_items'), DEFAULT_NAV_ITEMS);
     }
     return DEFAULT_NAV_ITEMS;
   });
   const [services, setServices] = useState<ServiceAsset[]>(() => {
     if (ENABLE_CACHE) {
-      const cached = localStorage.getItem('seal_services');
-      if (cached) return JSON.parse(cached);
+      return parseJson(readStorage('seal_services'), DEFAULT_SERVICES);
     }
     return DEFAULT_SERVICES;
   });
   const [externalLinks, setExternalLinks] = useState<ExternalLinkAsset[]>(() => {
-    const cached = localStorage.getItem('seal_external_links');
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch (e) {
-        // Fallback
-      }
-    }
-    return DEFAULT_EXTERNAL_LINKS;
+    return parseJson(readStorage('seal_external_links'), DEFAULT_EXTERNAL_LINKS);
   });
   const [memos, setMemos] = useState<MemoPost[]>(() => {
     if (ENABLE_CACHE) {
-      const cached = localStorage.getItem('seal_memos');
-      if (cached) return JSON.parse(cached);
+      return parseJson(readStorage('seal_memos'), DEFAULT_MEMOS);
     }
     return DEFAULT_MEMOS;
   });
@@ -99,29 +90,29 @@ export default function App() {
   const [lanLatency, setLanLatency] = useState<number | null>(null);
 
   // User Route Preference for internal service cards
-  const [routePreference, setRoutePreference] = useState<'tailscale' | 'lan'>('tailscale');
+  const [routePreference, setRoutePreference] = useState<RoutePreference>('tailscale');
 
   // Intranet Application View mode ('list' vs 'icons' with localStorage persistence)
   const [intranetViewMode, setIntranetViewMode] = useState<'list' | 'icons'>(() => {
-    const cached = localStorage.getItem('seal_intranet_view_mode');
+    const cached = readStorage('seal_intranet_view_mode');
     return (cached as 'list' | 'icons') || 'list';
   });
 
   const handleIntranetViewModeChange = (mode: 'list' | 'icons') => {
     setIntranetViewMode(mode);
-    localStorage.setItem('seal_intranet_view_mode', mode);
+    writeStorage('seal_intranet_view_mode', mode);
   };
 
   // State to manage collapisble external shortcuts widget in list mode
   const [isExternalShortcutExpanded, setIsExternalShortcutExpanded] = useState<boolean>(() => {
-    const cached = localStorage.getItem('seal_external_shortcut_expanded');
+    const cached = readStorage('seal_external_shortcut_expanded');
     return cached === null ? true : cached === 'true';
   });
 
   const toggleExternalShortcutExpanded = () => {
     setIsExternalShortcutExpanded(prev => {
       const newVal = !prev;
-      localStorage.setItem('seal_external_shortcut_expanded', String(newVal));
+      writeStorage('seal_external_shortcut_expanded', String(newVal));
       return newVal;
     });
   };
@@ -130,7 +121,7 @@ export default function App() {
   type ThemeMode = 'light' | 'dark' | 'system';
 
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const cached = localStorage.getItem('seal_theme_mode');
+    const cached = readStorage('seal_theme_mode');
     if (cached === 'light' || cached === 'dark' || cached === 'system') {
       return cached;
     }
@@ -141,7 +132,7 @@ export default function App() {
   const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    localStorage.setItem('seal_theme_mode', themeMode);
+    writeStorage('seal_theme_mode', themeMode);
 
     const checkDark = () => {
       if (themeMode === 'light') return false;
@@ -405,7 +396,7 @@ export default function App() {
   }, [lanStatus, tailscaleStatus, hasManuallySwitched]);
 
   // Unified controller for manual route preference switching, which re-checks the target network as requested
-  const handleRoutePreferenceChange = (newPref: 'tailscale' | 'lan') => {
+  const handleRoutePreferenceChange = (newPref: RoutePreference) => {
     setRoutePreference(newPref);
     setHasManuallySwitched(true);
     if (newPref === 'tailscale') {
@@ -438,33 +429,19 @@ export default function App() {
   };
 
   const fetchRemoteMemos = async () => {
-    // 1. 定义双路出口：第一条为 Tailscale IP，第二条为物理内网物理 IP（依据你之前提供的 Memos 端口 5230）
     const urls = [
-      "http://100.68.153.123:5230/api/v1/memos", // Tailscale 零信任链路
-      "http://192.168.31.240:5230/api/v1/memos"  // 物理内网直连链路
+      INTERNAL_ROUTES.tailscale.memosApi,
+      INTERNAL_ROUTES.lan.memosApi
     ];
 
-    // 2. 封装单路请求函数，自带 2.5 秒超时控制
     const fetchSinglePath = async (url: string) => {
-      const controller = new AbortController();
-      const timerId = setTimeout(() => controller.abort(), 2500); // 稍微宽限到 2.5 秒
-
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timerId);
-        if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
-        return await response.json();
-      } catch (e) {
-        clearTimeout(timerId);
-        throw e; // 抛出错误以供 Promise.any 捕获
-      }
+      const response = await fetchWithTimeout(url, {}, NETWORK_ENDPOINTS.timeouts.memosMs);
+      if (!response.ok) throw new Error(`HTTP 错误: ${response.status}`);
+      return await response.json();
     };
 
     try {
-      // 3. 核心：双路竞速！哪一条链路先连上、先返回数据，就直接用谁的成果
       const data = await Promise.any(urls.map(url => fetchSinglePath(url)));
-
-      // 4. 解析数据列表
       const list = Array.isArray(data) ? data : (data.memos || data.data || []);
 
       if (list && list.length > 0) {
@@ -550,26 +527,22 @@ export default function App() {
 
         setMemos(mapped);
       }
-    } catch (err) {
-      // 只有当 urls 里面的两条路全部挂掉（或者都超时）时，才会走到这里
-      console.warn("双路网络（物理内网/Tailscale）均无法联通 Memos 系统，已自动启用内置缓存/模拟数据：", err);
+    } catch {
+      setMemos(prev => (prev.length > 0 ? prev : DEFAULT_MEMOS));
     }
   };
 
   const testTailscaleConnection = async () => {
     setTailscaleStatus('testing');
 
-    // 找一个绝对存在的内网服务作为靶点（例如你的 Memos 或 AList 节点）
     const targets = [
-      "http://100.68.153.123:5230/",   // Tailscale Memos 端口
-      "http://100.68.153.123:3000/",   // Tailscale Gitea 端口
-      "http://100.68.153.123:5244/"    // Tailscale AList 端口
+      INTERNAL_ROUTES.tailscale.memos,
+      INTERNAL_ROUTES.tailscale.giteaExplore,
+      INTERNAL_ROUTES.tailscale.alist
     ];
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 2000); // 2.0秒超时保障在不稳定远程链路下的成功率
 
     const fetchTest = async (url: string) => {
-      await fetch(url, { mode: 'no-cors', signal: controller.signal });
+      await fetchWithTimeout(url, { mode: 'no-cors' }, NETWORK_ENDPOINTS.timeouts.tailscaleProbeMs);
       return url;
     };
     const startTime = Date.now();
@@ -577,8 +550,7 @@ export default function App() {
       await Promise.any(targets.map(url => fetchTest(url)));
       setLatency(Date.now() - startTime);
       setTailscaleStatus('connected');
-    } catch (error) {
-      clearTimeout(id);
+    } catch {
       setLatency(null);
       setTailscaleStatus('error');
     }
@@ -587,20 +559,14 @@ export default function App() {
   const testLanConnection = async () => {
     setLanStatus('testing');
 
-    // 以局域网 Memos 端口作为物理内网靶点
-    const targetUrl = "http://192.168.31.240:5230/";
-
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 1200); // 1.2秒超时
+    const targetUrl = INTERNAL_ROUTES.lan.memos;
 
     const startTime = Date.now();
     try {
-      await fetch(targetUrl, { mode: 'no-cors', signal: controller.signal });
-      clearTimeout(id);
+      await fetchWithTimeout(targetUrl, { mode: 'no-cors' }, NETWORK_ENDPOINTS.timeouts.lanProbeMs);
       setLanLatency(Date.now() - startTime);
       setLanStatus('connected');
-    } catch (error) {
-      clearTimeout(id);
+    } catch {
       setLanLatency(null);
       setLanStatus('error');
     }
@@ -620,31 +586,31 @@ export default function App() {
   // Sync state modifications to localStorage
   useEffect(() => {
     if (ENABLE_CACHE) {
-      localStorage.setItem('seal_nav_items', JSON.stringify(navItems));
+      writeStorage('seal_nav_items', JSON.stringify(navItems));
     }
   }, [navItems, ENABLE_CACHE]);
 
   useEffect(() => {
     if (ENABLE_CACHE) {
-      localStorage.setItem('seal_services', JSON.stringify(services));
+      writeStorage('seal_services', JSON.stringify(services));
     }
   }, [services, ENABLE_CACHE]);
 
   useEffect(() => {
-    localStorage.setItem('seal_external_links', JSON.stringify(externalLinks));
+    writeStorage('seal_external_links', JSON.stringify(externalLinks));
   }, [externalLinks]);
 
   useEffect(() => {
     if (ENABLE_CACHE) {
-      localStorage.setItem('seal_memos', JSON.stringify(memos));
+      writeStorage('seal_memos', JSON.stringify(memos));
     }
   }, [memos, ENABLE_CACHE]);
 
   // Utility to copy text to clipboard
-  const handleCopyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 1800);
+  const handleCopyToClipboard = async (text: string, id: string) => {
+    const copied = await copyText(text);
+    setCopiedId(copied ? id : 'copy-error');
+    window.setTimeout(() => setCopiedId(null), 1800);
   };
 
   // Icon Matcher helper

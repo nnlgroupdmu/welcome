@@ -5,47 +5,42 @@ import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(() => {
+  const shouldAnalyze = process.env.ANALYZE === 'true';
+
   return {
     base: '/welcome/',
     plugins: [
       react(), 
       tailwindcss(), 
-      visualizer({
-        open: false,            // 既然已经成功看过了，可以改为 false，避免每次 build 都弹窗打扰
+      shouldAnalyze && visualizer({
+        open: false,
         filename: 'stats.html', 
         gzipSize: true,      
       })
-    ],
+    ].filter(Boolean),
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    // 👇 新增：精准的手术式拆包配置
     build: {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // 1. 把最胖的 react 和 react-dom 单独打包
             if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
               return 'vendor-react';
             }
-            // 2. 把动画库 framer-motion 单独打包
-            if (id.includes('node_modules/framer-motion/')) {
+            if (id.includes('node_modules/motion/')) {
               return 'vendor-motion';
             }
-            // 3. 把图标库、markdown解析库等（根据你图中的方块）单独打包
-            if (id.includes('node_modules/lucide-react/') || id.includes('node_modules/micromark/')) {
-              return 'vendor-utils';
-            }
-            // 将 emoji-picker-react 相关依赖单独打包到 vendor-emoji 中
             if (id.includes('node_modules/emoji-picker-react')) {
               return 'vendor-emoji';
             }
-            
-            // 如果你还用了 lucide-react 或其他大图标库，也可以单独分包出来
             if (id.includes('node_modules/lucide-react')) {
               return 'vendor-icons';
+            }
+            if (id.includes('node_modules/react-markdown') || id.includes('node_modules/micromark/')) {
+              return 'vendor-markdown';
             }
           }
         }

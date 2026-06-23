@@ -3,15 +3,11 @@ import { Check, Clock, ExternalLink, PlusCircle, Send, StickyNote } from 'lucide
 import type { Dispatch, SetStateAction } from 'react';
 import type { MemoPost } from '../types';
 import MemoContent from './MemoContent';
-
-const MEMOS_HOST = {
-  tailscale: 'http://100.68.153.123:5230',
-  lan: 'http://192.168.31.240:5230',
-} as const;
+import { INTERNAL_ROUTES, NETWORK_HELP_TEXT, ROUTE_LABELS, type RoutePreference } from '../appConfig';
 
 type AppMemosFeedSectionProps = {
   filteredMemos: MemoPost[];
-  routePreference: 'tailscale' | 'lan';
+  routePreference: RoutePreference;
   selectedTag: string | null;
   setSelectedTag: (tag: string | null) => void;
   setVisibleMemosCount: Dispatch<SetStateAction<number>>;
@@ -26,7 +22,7 @@ export function AppMemosFeedSection({
   setVisibleMemosCount,
   visibleMemosCount,
 }: AppMemosFeedSectionProps) {
-  const memosHost = MEMOS_HOST[routePreference];
+  const memosHost = INTERNAL_ROUTES[routePreference].memos;
 
   return (
     <section id="section-memos-feed" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-hidden order-3 lg:order-none">
@@ -37,7 +33,7 @@ export function AppMemosFeedSection({
           </span>
           <div>
             <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base">Memos 速递</h3>
-            <p className="text-xs text-slate-400 dark:text-zinc-500">在这里速览 Memos 笔记最新发布的内容</p>
+            <p className="text-xs text-slate-400 dark:text-zinc-500">在这里速览 Memos 笔记最新发布的内容；不可达时保留内置内容</p>
           </div>
         </div>
 
@@ -141,9 +137,9 @@ export function AppMemosFeedSection({
         ) : (
           <div id="no-memos-fallback" className="py-16 text-center bg-white dark:bg-zinc-900/40 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
             <StickyNote className="w-12 h-12 text-slate-300 dark:text-zinc-600 mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-600 dark:text-zinc-300">目前没有相关的实验室备忘随笔。</p>
+                  <p className="text-sm font-bold text-slate-600 dark:text-zinc-300">目前没有相关的实验室备忘随笔。</p>
             <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-sm mx-auto mt-1">
-              您可以使用上方的“发布一条笔记”发布关于您最新调试项目跑通的好消息或需要求助的信息。
+              请确认已接入 {ROUTE_LABELS[routePreference]}。{NETWORK_HELP_TEXT}
             </p>
           </div>
         )}

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeftRight, Copy, Check } from 'lucide-react';
+import { NETWORK_ENDPOINTS } from '../appConfig';
+import { copyText } from '../clientUtils';
 
 interface DualRouteConverterProps {
   isCompact?: boolean;
@@ -9,8 +11,8 @@ export default function DualRouteConverter({ isCompact = false }: DualRouteConve
   const [inputUrl, setInputUrl] = useState('');
   const [copiedType, setCopiedType] = useState<'lan' | 'ts' | null>(null);
 
-  const LAN_IP = '192.168.31.240';
-  const TS_IP = '100.68.153.123';
+  const LAN_IP = NETWORK_ENDPOINTS.lanHost;
+  const TS_IP = NETWORK_ENDPOINTS.tailscaleHost;
 
   // Helper to resolve dual URLs
   const getDualUrls = (text: string) => {
@@ -65,11 +67,12 @@ export default function DualRouteConverter({ isCompact = false }: DualRouteConve
 
   const { lan: resolvedLan, ts: resolvedTs } = getDualUrls(inputUrl);
 
-  const handleCopy = (text: string, type: 'lan' | 'ts') => {
+  const handleCopy = async (text: string, type: 'lan' | 'ts') => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
+    const copied = await copyText(text);
+    if (!copied) return;
     setCopiedType(type);
-    setTimeout(() => setCopiedType(null), 1500);
+    window.setTimeout(() => setCopiedType(null), 1500);
   };
 
   return (
@@ -116,7 +119,7 @@ export default function DualRouteConverter({ isCompact = false }: DualRouteConve
           type="text"
           value={inputUrl}
           onChange={(e) => setInputUrl(e.target.value)}
-          placeholder={isCompact ? "输入/粘贴地址如: 192.168..." : "192.168.31.240[:端口或路径等]"}
+          placeholder={isCompact ? `输入/粘贴地址如: ${LAN_IP}` : `${LAN_IP}[:端口或路径等]`}
           className={`w-full pr-8 border border-slate-200 dark:border-zinc-800 rounded-lg text-xs font-mono bg-white dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-slate-700 dark:text-zinc-100 placeholder:text-slate-400 shadow-xs ${
             isCompact ? "px-2.5 py-1" : "px-3 py-1.5"
           }`}
