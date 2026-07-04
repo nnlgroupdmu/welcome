@@ -174,8 +174,8 @@ export function AppMemosFeedSection({
           </div>
         )}
 
-        {filteredMemos.length > 5 && (
-          <div className="flex flex-col items-center justify-center pt-4 border-t border-slate-100/80 dark:border-zinc-800">
+        {filteredMemos.length > 0 && (
+          <div className="flex flex-col items-center justify-center pt-4 border-t border-slate-100/80 dark:border-zinc-800 gap-3">
             {filteredMemos.length > visibleMemosCount ? (
               <button
                 id="btn-load-more-memos"
@@ -187,10 +187,26 @@ export function AppMemosFeedSection({
                 加载更多笔记 (还有 {filteredMemos.length - visibleMemosCount} 条)
               </button>
             ) : (
-              <p className="text-xs text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1 py-1">
-                <Check className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
-                已加载全部共 {filteredMemos.length} 条笔记
-              </p>
+              <>
+                <p className="text-xs text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                  已加载 {filteredMemos.length} 条最新笔记
+                </p>
+                <a
+                  id="btn-browse-memos-site"
+                  href={memosHost}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-98 border ${
+                    routePreference === 'tailscale'
+                      ? 'bg-emerald-50/60 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
+                      : 'bg-indigo-50/60 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-500 hover:text-white hover:border-indigo-500'
+                  }`}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  在 Memos 主站浏览更多
+                </a>
+              </>
             )}
           </div>
         )}

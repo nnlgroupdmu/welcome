@@ -14,6 +14,7 @@ export const NETWORK_ENDPOINTS = {
     gitea: 3000,
     grafana: 3999,
     prometheus: 9091,
+    llmModel: 8082,
   },
   timeouts: {
     memosMs: 2500,
@@ -38,6 +39,7 @@ export const INTERNAL_ROUTES = {
       '/d/adfcnh6/nvidia-dcgm-exporter?orgId=1&from=now-3h&to=now&timezone=browser&var-instance=localhost:9400&var-gpu=$__all&refresh=5s'
     ),
     prometheusApi: httpUrl(NETWORK_ENDPOINTS.tailscaleHost, NETWORK_ENDPOINTS.ports.prometheus, '/api/v1/query'),
+    llmModelApi: httpUrl(NETWORK_ENDPOINTS.tailscaleHost, NETWORK_ENDPOINTS.ports.llmModel, '/v1/models'),
   },
   lan: {
     memos: httpUrl(NETWORK_ENDPOINTS.lanHost, NETWORK_ENDPOINTS.ports.memos),
@@ -51,8 +53,9 @@ export const INTERNAL_ROUTES = {
       '/d/adfcnh6/nvidia-dcgm-exporter?orgId=1&from=now-3h&to=now&timezone=browser&var-instance=localhost:9400&var-gpu=$__all&refresh=5s'
     ),
     prometheusApi: httpUrl(NETWORK_ENDPOINTS.lanHost, NETWORK_ENDPOINTS.ports.prometheus, '/api/v1/query'),
+    llmModelApi: httpUrl(NETWORK_ENDPOINTS.lanHost, NETWORK_ENDPOINTS.ports.llmModel, '/v1/models'),
   },
 } as const;
 
 export const NETWORK_HELP_TEXT =
-  '本页部署在 GitHub Pages，实时数据由你的浏览器直连 HTTP 内网服务。请先接入实验室 WiFi 或 Tailscale；部分浏览器可能因安全策略阻止直连，页面会自动降级。';
+  '服务器数据仅支持内网访问。请先接入实验室 WiFi 或 Tailscale，并在浏览器点击“允许”以访问内网服务实时数据。';
