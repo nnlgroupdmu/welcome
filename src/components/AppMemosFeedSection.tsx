@@ -39,7 +39,7 @@ export function AppMemosFeedSection({
     }).format(new Date(memosFetchedAt))
     : '';
   const syncStatusText = (() => {
-    if (isMemosRefreshing || memosSyncStatus === 'syncing') return '正在同步...';
+    if (isMemosRefreshing || memosSyncStatus === 'syncing') return '正在同步中...';
     if (memosSyncStatus === 'live') return '已同步最新笔记';
     if (memosSyncStatus === 'cached-fresh') return formattedFetchedAt ? `缓存可用，上次同步于 ${formattedFetchedAt}` : '缓存可用';
     if (memosSyncStatus === 'cached-stale') return formattedFetchedAt ? `缓存已过期，上次同步于 ${formattedFetchedAt}` : '缓存已过期';
