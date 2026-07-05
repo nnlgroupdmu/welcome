@@ -83,7 +83,6 @@ export default function App() {
     return initialCachedMemos?.items.length ? initialCachedMemos.items : DEFAULT_MEMOS;
   });
   const [memosFetchedAt, setMemosFetchedAt] = useState<number | null>(() => initialCachedMemos?.fetchedAt || null);
-  const [memosSource, setMemosSource] = useState<MemosCacheSource | null>(() => initialCachedMemos?.source || null);
   const [memosSyncStatus, setMemosSyncStatus] = useState<MemosSyncStatus>(() => {
     if (!initialCachedMemos?.items.length) return 'default';
     return isMemosCacheStale(initialCachedMemos) ? 'cached-stale' : 'cached-fresh';
@@ -553,7 +552,7 @@ export default function App() {
         const fetchedAt = Date.now();
         setMemos(mapped);
         setMemosFetchedAt(fetchedAt);
-        setMemosSource(source);
+
         setMemosSyncStatus('live');
 
         if (CACHE_MEMOS) {
@@ -843,7 +842,6 @@ export default function App() {
             filteredMemos={filteredMemos}
             isMemosRefreshing={isMemosRefreshing}
             memosFetchedAt={memosFetchedAt}
-            memosSource={memosSource}
             memosSyncStatus={memosSyncStatus}
             routePreference={routePreference}
             selectedTag={selectedTag}
