@@ -82,11 +82,11 @@ sudo chown -R [你的用户名]:[你的用户名] /home/[你的用户名]/work_d
 ### 一、整体架构概览
 
 
-- **网络层 (Tailscale)：** 通过 Tailscale 建立云端组网，实现“实验室 WiFi 直连”与“校外远程 SSH”的无缝切换。
+- **网络层 (Tailscale)：** 通过 Tailscale 建立云端局域网。公网不可访问服务器。
     
-- **开发层 (SSH + VS Code)：** 推荐使用 VS Code 配合 Remote-Development 插件。所有代码编写、调试均在个人电脑端完成，通过 SSH 实时同步至服务器。
+- **开发层 (SSH + VS Code)：** 推荐使用 VS Code SSH 远程开发，多名用户可同时使用。
     
-- **计算层 (Docker)：** 将所有任务在 Docker 容器中运行，可以实现完全隔离的安全环境。不建议长期项目、主要项目、或新同学的首个项目直接在宿主机 conda 配实验环境。Docker container 并不比 conda env 更难配置。
+- **计算层 (Docker)：** 将所有任务在 Docker 容器中运行，不担心搞坏服务器环境。
 
 - **调度层 (Task Spooler)：** 强烈建议的任务提交方式。一个轻量的、跨用户共享的任务队列，有自动分配空闲显卡的功能。
     
@@ -334,7 +334,7 @@ docker exec -it [容器名] /bin/bash
 
 ### 2.2 环境配置
 
-由于使用了 docker，环境是非常独立而安全的，不需要再使用 conda。2026 年初几乎所有 conda 源全部失效。我们推荐使用 pip 安装环境。（如果你想，你仍然可以在容器里使用 conda）
+由于使用了 docker，环境是非常独立而安全的，不需要再使用 conda。2026 年初几乎所有 conda 源全部失效。我们推荐使用 pip 安装环境。（如果你想，你仍然可以在容器里使用 conda/venv/uv）
 
 既然镜像里已经预装了对应 CUDA 12.8 的高性能 Python 和 PyTorch，直接用 `pip` 是最稳的。
 
