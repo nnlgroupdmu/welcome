@@ -90,6 +90,16 @@ export const DEFAULT_SERVICES: ServiceAsset[] = [
   }
 ];
 
+export const AI_WEBCHAT_SERVICE: ServiceAsset = {
+  id: 'srv-ai-webchat',
+  name: 'AI WebChat',
+  description: 'GPU 1 常驻模型，打开即可开始内网 AI 对话。',
+  icon: 'Sparkles',
+  localUrl: INTERNAL_ROUTES.lan.aiWebchat,
+  tailscaleUrl: INTERNAL_ROUTES.tailscale.aiWebchat,
+  status: 'online'
+};
+
 export const DEFAULT_EXTERNAL_LINKS: ExternalLinkAsset[] = [
   {
     id: 'ext-1',

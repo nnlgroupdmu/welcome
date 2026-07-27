@@ -15,6 +15,7 @@ export const NETWORK_ENDPOINTS = {
     grafana: 3999,
     prometheus: 9091,
     llmModel: 8082,
+    aiWebchat: 8080,
   },
   timeouts: {
     memosMs: 2500,
@@ -40,6 +41,7 @@ export const INTERNAL_ROUTES = {
     ),
     prometheusApi: httpUrl(NETWORK_ENDPOINTS.tailscaleHost, NETWORK_ENDPOINTS.ports.prometheus, '/api/v1/query'),
     llmModelApi: httpUrl(NETWORK_ENDPOINTS.tailscaleHost, NETWORK_ENDPOINTS.ports.llmModel, '/v1/models'),
+    aiWebchat: httpUrl(NETWORK_ENDPOINTS.tailscaleHost, NETWORK_ENDPOINTS.ports.aiWebchat),
   },
   lan: {
     memos: httpUrl(NETWORK_ENDPOINTS.lanHost, NETWORK_ENDPOINTS.ports.memos),
@@ -54,6 +56,7 @@ export const INTERNAL_ROUTES = {
     ),
     prometheusApi: httpUrl(NETWORK_ENDPOINTS.lanHost, NETWORK_ENDPOINTS.ports.prometheus, '/api/v1/query'),
     llmModelApi: httpUrl(NETWORK_ENDPOINTS.lanHost, NETWORK_ENDPOINTS.ports.llmModel, '/v1/models'),
+    aiWebchat: httpUrl(NETWORK_ENDPOINTS.lanHost, NETWORK_ENDPOINTS.ports.aiWebchat),
   },
 } as const;
 

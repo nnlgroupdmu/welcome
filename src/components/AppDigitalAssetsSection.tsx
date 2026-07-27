@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import EmojiPicker from 'emoji-picker-react';
-import { ArrowUpRight, Check, ChevronDown, ChevronRight, ExternalLink, Layers, LayoutGrid, List, Plus, Search, SquarePen, X } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronDown, ChevronRight, ExternalLink, Layers, LayoutGrid, List, Plus, Search, Sparkles, SquarePen, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ComponentProps, Dispatch, DragEvent, FormEvent, MouseEvent, ReactNode, SetStateAction } from 'react';
-import { DEFAULT_EXTERNAL_LINKS, PRESET_EXTERNAL_LINKS } from '../data';
+import { AI_WEBCHAT_SERVICE, DEFAULT_EXTERNAL_LINKS, PRESET_EXTERNAL_LINKS } from '../data';
 import type { PresetLink } from '../data';
 import type { ExternalLinkAsset, ServiceAsset } from '../types';
 import { ExternalFavicon } from './ExternalFavicon';
@@ -146,6 +146,9 @@ export function AppDigitalAssetsSection({
   const previewIcon = newLinkIconType === 'favicon' || (newLinkIconType === 'text' && newLinkUseMatchedLucide)
     ? matchedLucideIcon
     : '';
+  const aiWebchatUrl = routePreference === 'tailscale'
+    ? AI_WEBCHAT_SERVICE.tailscaleUrl
+    : AI_WEBCHAT_SERVICE.localUrl;
 
   const exitExternalLinksEditMode = () => {
     setIsEditModeActive(false);
@@ -225,6 +228,24 @@ export function AppDigitalAssetsSection({
 
   return (
     <>
+      <a
+        id="floating-ai-webchat"
+        href={aiWebchatUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="打开 AI WebChat，GPU 1 常驻模型"
+        title={`AI WebChat · GPU 1 常驻模型\n${aiWebchatUrl}`}
+        className="group fixed z-40 right-0 bottom-4 sm:bottom-auto sm:top-[68%] sm:-translate-y-1/2 h-12 w-12 sm:hover:w-40 overflow-hidden rounded-l-2xl border border-r-0 border-slate-200/55 dark:border-zinc-700/55 bg-white/80 dark:bg-zinc-900/80 shadow-[0_3px_12px_rgba(15,23,42,0.08)] backdrop-blur-md transition-[width,transform,box-shadow] duration-300 hover:border-violet-200/70 dark:hover:border-violet-900/70 hover:shadow-[0_5px_16px_rgba(15,23,42,0.11)] flex items-center text-left"
+      >
+        <span className="relative w-12 h-12 shrink-0 flex items-center justify-center text-violet-500/80 dark:text-violet-400/80">
+          <Sparkles className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+        </span>
+        <span className="hidden sm:flex min-w-0 pr-3 flex-col whitespace-nowrap opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+          <span className="text-xs font-extrabold text-slate-800 dark:text-zinc-100 leading-tight">本地 AI</span>
+          <span className="text-[9px] font-bold text-violet-600 dark:text-violet-400 mt-0.5">GPU 1 常驻本地模型</span>
+        </span>
+      </a>
+
       <section id="section-digital-assets" className="bg-gradient-to-b from-white to-slate-50/50 dark:from-zinc-900 dark:to-zinc-900/40 rounded-2xl border border-slate-200/60 dark:border-zinc-800 shadow-xs hover:shadow-sm transition-all duration-300 p-6 flex flex-col relative overflow-visible order-2 lg:order-none shrink-0">
         <div>
           <div className="flex items-start justify-between mb-5 pb-2.5 border-b border-slate-100 dark:border-zinc-800 gap-4">
