@@ -285,7 +285,7 @@ docker run -d \
   -v /home/[用户名]/[项目文件夹]:/home/[用户名]/[项目文件夹] \
   -v /disk2/archive:/disk2/archive:ro \
   -v /disk2/public:/disk2/public:rw \
-  --restart always \
+  --restart unless-stopped \
   --env LANG=C.UTF-8 \
   base_image:v1
 ```
